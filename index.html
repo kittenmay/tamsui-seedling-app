@@ -86,6 +86,10 @@
         },
       };
     </script>
+
+    <!-- Supabase JS (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabaseClient.js"></script>
   </head>
   <body class="min-h-dvh bg-soil-50 text-slate-800">
     <!-- Decorative background -->
@@ -212,37 +216,17 @@
               </span>
             </div>
 
-            <div class="mt-6 space-y-3">
-              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
-                <div class="flex items-center justify-between gap-3">
-                  <h3 class="text-base font-semibold text-slate-900">空心菜</h3>
-                  <span class="rounded-full bg-sun-100 px-2 py-0.5 text-xs font-semibold text-amber-900">耐熱快長</span>
-                </div>
-                <p class="mt-2 text-sm text-slate-700">
-                  4 月開始轉暖，適合播種或定植；注意澆水與保持土壤濕潤。
-                </p>
-              </article>
-
-              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
-                <div class="flex items-center justify-between gap-3">
-                  <h3 class="text-base font-semibold text-slate-900">小白菜／青江菜</h3>
-                  <span class="rounded-full bg-leaf-100 px-2 py-0.5 text-xs font-semibold text-leaf-900">週期短</span>
-                </div>
-                <p class="mt-2 text-sm text-slate-700">
-                  仍可種，但氣溫升高後易抽苔；建議分批少量種植、加強遮陰與通風。
-                </p>
-              </article>
-
-              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
-                <div class="flex items-center justify-between gap-3">
-                  <h3 class="text-base font-semibold text-slate-900">絲瓜／苦瓜</h3>
-                  <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-900">夏季瓜果</span>
-                </div>
-                <p class="mt-2 text-sm text-slate-700">
-                  可育苗後移植，提早搭棚／引蔓；留意病蟲害與日照管理。
-                </p>
-              </article>
+            <div id="monthlyEmpty" class="mt-6 hidden rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+              <p class="text-sm font-semibold text-slate-900">
+                目前資料庫尚無菜苗資料，請至 Supabase 後台新增第一筆資料！
+              </p>
             </div>
+
+            <div
+              id="monthlyRecommendations"
+              class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2"
+              aria-live="polite"
+            ></div>
 
             <div class="mt-6 rounded-xl bg-white p-4 ring-1 ring-slate-900/5">
               <p class="text-sm font-semibold text-slate-900">下一步（之後可接）</p>
@@ -266,6 +250,9 @@
                 <h2 class="text-lg font-semibold text-slate-900">淡水種植曆</h2>
                 <p class="mt-1 text-sm text-slate-600">
                   淡水偏多雨潮濕，建議注重<strong class="font-semibold text-slate-900">通風、排水、病害預防</strong>。（示意）
+                </p>
+                <p id="calendarFromDb" class="mt-2 text-xs text-slate-500">
+                  （尚未載入資料）
                 </p>
               </div>
               <span class="inline-flex items-center gap-2 rounded-full bg-leaf-50 px-3 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">
@@ -376,6 +363,10 @@
                 Beta
               </span>
             </div>
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <p id="supabaseStatus" class="text-xs font-semibold text-slate-600">尚未連線 Supabase</p>
+              <p id="encyclopediaCount" class="text-xs text-slate-500">—</p>
+            </div>
 
             <form class="mt-5" action="#" aria-label="菜苗百科搜尋（示意）">
               <label for="encyclopediaSearch" class="sr-only">搜尋作物</label>
@@ -403,7 +394,7 @@
               <p class="mt-2 text-xs text-slate-500">提示：目前為預留區，搜尋不會真的查詢資料。</p>
             </form>
 
-            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <div id="encyclopediaCards" class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
               <!-- Card: Cabbage -->
               <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
                 <div class="flex items-start justify-between gap-3">
@@ -510,7 +501,129 @@
     </main>
 
     <script>
-      document.getElementById("year").textContent = String(new Date().getFullYear());
+      const $ = (id) => document.getElementById(id);
+
+      function pick(obj, keys) {
+        for (const k of keys) {
+          if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== "") return obj[k];
+        }
+        return undefined;
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function normalizeCrop(row) {
+        const name = pick(row, ["name", "crop_name", "title", "作物名稱", "名稱"]);
+        const tip = pick(row, ["tip", "tips", "note", "hint", "小撇步", "建議", "memo"]);
+        const monthsRaw = pick(row, ["months", "recommended_months", "plant_months", "suitable_months", "月份", "month"]);
+
+        let months = [];
+        if (Array.isArray(monthsRaw)) months = monthsRaw;
+        else if (typeof monthsRaw === "string") {
+          months = monthsRaw
+            .split(/[,\s、/]+/g)
+            .map((s) => s.trim().replace("月", ""))
+            .filter(Boolean)
+            .map((s) => Number(s))
+            .filter((n) => Number.isFinite(n) && n >= 1 && n <= 12);
+        } else if (typeof monthsRaw === "number" && Number.isFinite(monthsRaw)) {
+          months = [monthsRaw];
+        }
+
+        return {
+          name: name ? String(name) : undefined,
+          tip: tip ? String(tip) : undefined,
+          months,
+          raw: row,
+        };
+      }
+
+      function renderMonthlyRecommendations(rows) {
+        const host = $("monthlyRecommendations");
+        const empty = $("monthlyEmpty");
+        if (!host || !empty) return;
+
+        const crops = (rows || []).map(normalizeCrop).filter((c) => c.name);
+        host.innerHTML = "";
+
+        if (crops.length === 0) {
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+
+        for (const crop of crops) {
+          const name = escapeHtml(crop.name);
+          const tip = escapeHtml(crop.tip || "—");
+          const months = Array.from(
+            new Set((crop.months || []).map((m) => Number(m)).filter((n) => Number.isFinite(n) && n >= 1 && n <= 12))
+          )
+            .sort((a, b) => a - b)
+            .slice(0, 8);
+
+          const monthsHtml =
+            months.length > 0
+              ? months
+                  .map(
+                    (m) =>
+                      `<span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">${escapeHtml(
+                        m
+                      )} 月</span>`
+                  )
+                  .join("")
+              : `<span class="rounded-full bg-soil-100 px-2.5 py-1 text-xs font-semibold text-soil-900 ring-1 ring-soil-900/10">月份未設定</span>`;
+
+          const el = document.createElement("article");
+          el.className =
+            "rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5 shadow-sm hover:bg-white/60 transition-colors";
+          el.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="text-base font-semibold text-slate-900">${name}</h3>
+                <div class="mt-2 flex flex-wrap gap-2">${monthsHtml}</div>
+              </div>
+              <span class="rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-900/10">crops</span>
+            </div>
+            <p class="mt-3 text-sm text-slate-700">
+              <span class="font-semibold text-slate-900">小撇步：</span>${tip}
+            </p>
+          `;
+          host.appendChild(el);
+        }
+      }
+
+      async function fetchCrops() {
+        // Year
+        const yearEl = $("year");
+        if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+        if (!globalThis.supabaseClient) {
+          console.warn("supabaseClient not initialized.");
+          renderMonthlyRecommendations([]);
+          return [];
+        }
+
+        const { data, error } = await globalThis.supabaseClient.from("crops").select("*");
+        if (error) {
+          console.warn("Supabase query error.");
+          renderMonthlyRecommendations([]);
+          return [];
+        }
+        return data || [];
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        fetchCrops()
+          .then((data) => renderMonthlyRecommendations(data))
+          .catch(() => renderMonthlyRecommendations([]));
+      });
     </script>
   </body>
 </html>
