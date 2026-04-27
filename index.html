@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>淡水農友助手｜淡水菜苗專賣店</title>
+    <meta
+      name="description"
+      content="淡水菜苗專賣店的農民資訊 Web App：今日淡水天氣預報、本月推薦種植。"
+    />
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: [
+                "ui-sans-serif",
+                "system-ui",
+                "-apple-system",
+                "Segoe UI",
+                "Roboto",
+                "Noto Sans TC",
+                "Helvetica",
+                "Arial",
+                "Apple Color Emoji",
+                "Segoe UI Emoji",
+              ],
+            },
+            colors: {
+              soil: {
+                50: "#f7f3ee",
+                100: "#efe7db",
+                200: "#e2d2b7",
+                300: "#d0b586",
+                400: "#be9758",
+                500: "#a67d3e",
+                600: "#876332",
+                700: "#694b26",
+                800: "#4f371d",
+                900: "#3a2816",
+              },
+              leaf: {
+                50: "#eefbf2",
+                100: "#d8f6e3",
+                200: "#b3ecc8",
+                300: "#7bdeaa",
+                400: "#3cc686",
+                500: "#18a86b",
+                600: "#0e8555",
+                700: "#0d6a46",
+                800: "#0d5339",
+                900: "#0b4530",
+              },
+              sky: {
+                50: "#eef6ff",
+                100: "#dbeafe",
+                200: "#bfdbfe",
+                300: "#93c5fd",
+                400: "#60a5fa",
+                500: "#3b82f6",
+                600: "#2563eb",
+                700: "#1d4ed8",
+                800: "#1e40af",
+                900: "#1e3a8a",
+              },
+              sun: {
+                50: "#fffbeb",
+                100: "#fef3c7",
+                200: "#fde68a",
+                300: "#fcd34d",
+                400: "#fbbf24",
+                500: "#f59e0b",
+                600: "#d97706",
+                700: "#b45309",
+                800: "#92400e",
+                900: "#78350f",
+              },
+            },
+            boxShadow: {
+              soft: "0 12px 30px rgba(15, 23, 42, 0.10)",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-dvh bg-soil-50 text-slate-800">
+    <!-- Decorative background -->
+    <div
+      aria-hidden="true"
+      class="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+    >
+      <div
+        class="absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-gradient-to-br from-leaf-200/70 via-sun-100/70 to-sky-200/70 blur-3xl"
+      ></div>
+      <div
+        class="absolute -bottom-56 -left-28 h-[520px] w-[520px] rounded-full bg-gradient-to-tr from-soil-200/70 via-leaf-100/70 to-sun-100/70 blur-3xl"
+      ></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.06)_1px,transparent_0)] [background-size:18px_18px]"></div>
+    </div>
+
+    <header class="mx-auto max-w-6xl px-4 pb-6 pt-10 sm:px-6 sm:pt-14">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <div
+            class="grid h-11 w-11 place-items-center rounded-2xl bg-leaf-600 text-white shadow-soft"
+            title="淡水菜苗專賣店"
+          >
+            <span class="text-lg font-semibold">苗</span>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-slate-600">淡水菜苗專賣店</p>
+            <h1 class="mt-1 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+              淡水農友助手
+            </h1>
+          </div>
+        </div>
+        <a
+          href="#"
+          class="hidden items-center gap-2 rounded-xl bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 shadow-soft ring-1 ring-slate-900/5 backdrop-blur hover:bg-white sm:inline-flex"
+          aria-label="（示意）新增田間記錄"
+        >
+          <span class="inline-block h-2 w-2 rounded-full bg-leaf-500"></span>
+          新增田間記錄（示意）
+        </a>
+      </div>
+
+      <div class="mt-6 rounded-2xl bg-white/70 p-5 shadow-soft ring-1 ring-slate-900/5 backdrop-blur sm:p-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-600">今日小提醒</p>
+            <p class="mt-1 text-base text-slate-900">
+              先把「天氣」與「推薦作物」整合起來，之後再接即時 API。
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span class="rounded-full bg-leaf-50 px-3 py-1 text-xs font-semibold text-leaf-800 ring-1 ring-leaf-900/10"
+              >友善農法</span
+            >
+            <span class="rounded-full bg-sun-50 px-3 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10"
+              >溫暖介面</span
+            >
+            <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10"
+              >淡水在地</span
+            >
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 pb-14 sm:px-6">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <!-- Weather -->
+        <section class="lg:col-span-7">
+          <div class="rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-slate-900/5 backdrop-blur">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-semibold text-slate-900">今日淡水天氣預報</h2>
+                <p class="mt-1 text-sm text-slate-600">（假資料）更新時間：07:30</p>
+              </div>
+              <div class="rounded-2xl bg-gradient-to-br from-sky-100 to-sun-100 px-4 py-3 ring-1 ring-slate-900/5">
+                <p class="text-sm font-medium text-slate-700">體感</p>
+                <p class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">26°C</p>
+              </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <p class="text-xs font-semibold text-slate-600">天氣</p>
+                <p class="mt-1 text-base font-semibold text-slate-900">多雲短暫陽光</p>
+              </div>
+              <div class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <p class="text-xs font-semibold text-slate-600">降雨機率</p>
+                <p class="mt-1 text-base font-semibold text-slate-900">30%</p>
+              </div>
+              <div class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <p class="text-xs font-semibold text-slate-600">風</p>
+                <p class="mt-1 text-base font-semibold text-slate-900">東北風 3 級</p>
+              </div>
+              <div class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <p class="text-xs font-semibold text-slate-600">濕度</p>
+                <p class="mt-1 text-base font-semibold text-slate-900">78%</p>
+              </div>
+            </div>
+
+            <div class="mt-6 rounded-xl bg-gradient-to-r from-leaf-50 to-sun-50 p-4 ring-1 ring-slate-900/5">
+              <p class="text-sm font-semibold text-slate-900">田間建議（假資料）</p>
+              <ul class="mt-2 space-y-1 text-sm text-slate-700">
+                <li>上午通風良好，可安排育苗區巡檢與補水。</li>
+                <li>午後偶有陣雨，葉菜類可注意病害預防與排水。</li>
+                <li>傍晚溫和，適合移植與覆蓋保濕。</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- This month -->
+        <section class="lg:col-span-5">
+          <div class="rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-slate-900/5 backdrop-blur">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h2 class="text-lg font-semibold text-slate-900">本月推薦種植</h2>
+                <p class="mt-1 text-sm text-slate-600">
+                  目前月份：<span class="font-semibold text-slate-900">4 月</span>（示意）
+                </p>
+              </div>
+              <span class="rounded-full bg-leaf-600/10 px-3 py-1 text-xs font-semibold text-leaf-800 ring-1 ring-leaf-900/10">
+                淡水參考
+              </span>
+            </div>
+
+            <div class="mt-6 space-y-3">
+              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <div class="flex items-center justify-between gap-3">
+                  <h3 class="text-base font-semibold text-slate-900">空心菜</h3>
+                  <span class="rounded-full bg-sun-100 px-2 py-0.5 text-xs font-semibold text-amber-900">耐熱快長</span>
+                </div>
+                <p class="mt-2 text-sm text-slate-700">
+                  4 月開始轉暖，適合播種或定植；注意澆水與保持土壤濕潤。
+                </p>
+              </article>
+
+              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <div class="flex items-center justify-between gap-3">
+                  <h3 class="text-base font-semibold text-slate-900">小白菜／青江菜</h3>
+                  <span class="rounded-full bg-leaf-100 px-2 py-0.5 text-xs font-semibold text-leaf-900">週期短</span>
+                </div>
+                <p class="mt-2 text-sm text-slate-700">
+                  仍可種，但氣溫升高後易抽苔；建議分批少量種植、加強遮陰與通風。
+                </p>
+              </article>
+
+              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <div class="flex items-center justify-between gap-3">
+                  <h3 class="text-base font-semibold text-slate-900">絲瓜／苦瓜</h3>
+                  <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-900">夏季瓜果</span>
+                </div>
+                <p class="mt-2 text-sm text-slate-700">
+                  可育苗後移植，提早搭棚／引蔓；留意病蟲害與日照管理。
+                </p>
+              </article>
+            </div>
+
+            <div class="mt-6 rounded-xl bg-white p-4 ring-1 ring-slate-900/5">
+              <p class="text-sm font-semibold text-slate-900">下一步（之後可接）</p>
+              <ul class="mt-2 space-y-1 text-sm text-slate-700">
+                <li>串接中央氣象署或 Open-Meteo API 做即時天氣。</li>
+                <li>把推薦作物改成可維護的資料表（JSON/後端）。</li>
+                <li>加入「菜苗庫存」與「病蟲害提醒」模組。</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Tamsui planting calendar + encyclopedia (responsive) -->
+      <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <!-- Planting calendar -->
+        <section class="lg:col-span-7">
+          <div class="rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-slate-900/5 backdrop-blur">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 class="text-lg font-semibold text-slate-900">淡水種植曆</h2>
+                <p class="mt-1 text-sm text-slate-600">
+                  淡水偏多雨潮濕，建議注重<strong class="font-semibold text-slate-900">通風、排水、病害預防</strong>。（示意）
+                </p>
+              </div>
+              <span class="inline-flex items-center gap-2 rounded-full bg-leaf-50 px-3 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">
+                <span class="inline-block h-1.5 w-1.5 rounded-full bg-leaf-600"></span>
+                4–6 月
+              </span>
+            </div>
+
+            <!-- Desktop/tablet table -->
+            <div class="mt-5 hidden overflow-hidden rounded-xl ring-1 ring-slate-900/5 md:block">
+              <table class="w-full border-collapse bg-white">
+                <thead class="bg-soil-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-slate-600">月份</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-slate-600">推薦菜苗</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-slate-600">潮濕重點提醒</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr class="hover:bg-white/80">
+                    <td class="px-4 py-4 text-sm font-semibold text-slate-900">4 月</td>
+                    <td class="px-4 py-4 text-sm text-slate-700">
+                      <div class="flex flex-wrap gap-2">
+                        <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
+                        <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-4 text-sm text-slate-700">雨後注意排水；葉面保持乾爽、加強通風。</td>
+                  </tr>
+                  <tr class="hover:bg-white/80">
+                    <td class="px-4 py-4 text-sm font-semibold text-slate-900">5 月</td>
+                    <td class="px-4 py-4 text-sm text-slate-700">
+                      <div class="flex flex-wrap gap-2">
+                        <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
+                        <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">絲瓜</span>
+                        <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-4 text-sm text-slate-700">進入梅雨季，提前搭棚／引蔓；留意霜黴病、炭疽病。</td>
+                  </tr>
+                  <tr class="hover:bg-white/80">
+                    <td class="px-4 py-4 text-sm font-semibold text-slate-900">6 月</td>
+                    <td class="px-4 py-4 text-sm text-slate-700">
+                      <div class="flex flex-wrap gap-2">
+                        <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">絲瓜</span>
+                        <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
+                        <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-4 text-sm text-slate-700">高溫高濕，病蟲害加速；建議清晨澆水、避免夜間積水。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mobile cards -->
+            <div class="mt-5 space-y-3 md:hidden">
+              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <div class="flex items-center justify-between gap-3">
+                  <h3 class="text-base font-semibold text-slate-900">4 月</h3>
+                  <span class="rounded-full bg-leaf-600/10 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">轉暖</span>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
+                  <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
+                </div>
+                <p class="mt-3 text-sm text-slate-700">雨後注意排水；葉面保持乾爽、加強通風。</p>
+              </article>
+
+              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <div class="flex items-center justify-between gap-3">
+                  <h3 class="text-base font-semibold text-slate-900">5 月</h3>
+                  <span class="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">梅雨</span>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
+                  <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">絲瓜</span>
+                  <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
+                </div>
+                <p class="mt-3 text-sm text-slate-700">提前搭棚／引蔓；留意霜黴病、炭疽病。</p>
+              </article>
+
+              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <div class="flex items-center justify-between gap-3">
+                  <h3 class="text-base font-semibold text-slate-900">6 月</h3>
+                  <span class="rounded-full bg-sun-100 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">高溫高濕</span>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">絲瓜</span>
+                  <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
+                  <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
+                </div>
+                <p class="mt-3 text-sm text-slate-700">清晨澆水、避免夜間積水；病蟲害加速時可加密巡檢。</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- Encyclopedia placeholder -->
+        <section class="lg:col-span-5">
+          <div class="rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-slate-900/5 backdrop-blur">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h2 class="text-lg font-semibold text-slate-900">菜苗百科預留區</h2>
+                <p class="mt-1 text-sm text-slate-600">先做介面，之後可接資料庫或 JSON。（示意）</p>
+              </div>
+              <span class="rounded-full bg-soil-100 px-3 py-1 text-xs font-semibold text-soil-900 ring-1 ring-soil-900/10">
+                Beta
+              </span>
+            </div>
+
+            <form class="mt-5" action="#" aria-label="菜苗百科搜尋（示意）">
+              <label for="encyclopediaSearch" class="sr-only">搜尋作物</label>
+              <div class="flex items-center gap-2 rounded-xl bg-soil-50 p-2 ring-1 ring-slate-900/5 focus-within:ring-2 focus-within:ring-leaf-500/60">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-white ring-1 ring-slate-900/5">
+                  <svg viewBox="0 0 24 24" class="h-5 w-5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 21l-4.3-4.3" />
+                    <circle cx="11" cy="11" r="7" />
+                  </svg>
+                </span>
+                <input
+                  id="encyclopediaSearch"
+                  name="q"
+                  type="search"
+                  placeholder="搜尋菜苗，例如：番茄、萵苣、高麗菜"
+                  class="h-9 w-full bg-transparent px-1 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  class="inline-flex h-9 items-center justify-center rounded-lg bg-leaf-600 px-3 text-sm font-semibold text-white shadow-sm hover:bg-leaf-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500"
+                >
+                  搜尋
+                </button>
+              </div>
+              <p class="mt-2 text-xs text-slate-500">提示：目前為預留區，搜尋不會真的查詢資料。</p>
+            </form>
+
+            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <!-- Card: Cabbage -->
+              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 class="text-base font-semibold text-slate-900">高麗菜</h3>
+                    <p class="mt-1 text-xs font-semibold text-slate-600">十字花科｜葉菜</p>
+                  </div>
+                  <span class="rounded-full bg-leaf-100 px-2 py-0.5 text-xs font-semibold text-leaf-900">好保存</span>
+                </div>
+                <dl class="mt-4 grid grid-cols-2 gap-3">
+                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
+                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-leaf-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 6v6l4 2" />
+                        <circle cx="12" cy="12" r="9" />
+                      </svg>
+                      生長天數
+                    </dt>
+                    <dd class="mt-1 text-sm font-semibold text-slate-900">75–95 天</dd>
+                  </div>
+                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
+                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 2s6 7 6 12a6 6 0 0 1-12 0c0-5 6-12 6-12z" />
+                      </svg>
+                      澆水頻率
+                    </dt>
+                    <dd class="mt-1 text-sm font-semibold text-slate-900">每 2–3 天</dd>
+                  </div>
+                </dl>
+              </article>
+
+              <!-- Card: Lettuce -->
+              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 class="text-base font-semibold text-slate-900">萵苣</h3>
+                    <p class="mt-1 text-xs font-semibold text-slate-600">菊科｜葉菜</p>
+                  </div>
+                  <span class="rounded-full bg-sun-100 px-2 py-0.5 text-xs font-semibold text-amber-900">清爽脆口</span>
+                </div>
+                <dl class="mt-4 grid grid-cols-2 gap-3">
+                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
+                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-leaf-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 6v6l4 2" />
+                        <circle cx="12" cy="12" r="9" />
+                      </svg>
+                      生長天數
+                    </dt>
+                    <dd class="mt-1 text-sm font-semibold text-slate-900">45–60 天</dd>
+                  </div>
+                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
+                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 2s6 7 6 12a6 6 0 0 1-12 0c0-5 6-12 6-12z" />
+                      </svg>
+                      澆水頻率
+                    </dt>
+                    <dd class="mt-1 text-sm font-semibold text-slate-900">每天／隔天</dd>
+                  </div>
+                </dl>
+              </article>
+
+              <!-- Card: Tomato -->
+              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5 sm:col-span-2 lg:col-span-1">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 class="text-base font-semibold text-slate-900">番茄</h3>
+                    <p class="mt-1 text-xs font-semibold text-slate-600">茄科｜果菜</p>
+                  </div>
+                  <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-900">需立支架</span>
+                </div>
+                <dl class="mt-4 grid grid-cols-2 gap-3">
+                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
+                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-leaf-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 6v6l4 2" />
+                        <circle cx="12" cy="12" r="9" />
+                      </svg>
+                      生長天數
+                    </dt>
+                    <dd class="mt-1 text-sm font-semibold text-slate-900">90–120 天</dd>
+                  </div>
+                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
+                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 2s6 7 6 12a6 6 0 0 1-12 0c0-5 6-12 6-12z" />
+                      </svg>
+                      澆水頻率
+                    </dt>
+                    <dd class="mt-1 text-sm font-semibold text-slate-900">每 2–3 天</dd>
+                  </div>
+                </dl>
+              </article>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="mt-10 text-center text-xs text-slate-500">
+        <p>© <span id="year"></span> 淡水菜苗專賣店｜淡水農友助手（基礎版）</p>
+      </footer>
+    </main>
+
+    <script>
+      document.getElementById("year").textContent = String(new Date().getFullYear());
+    </script>
+  </body>
+</html>
