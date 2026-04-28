@@ -630,98 +630,95 @@
 
         if (updated) updated.textContent = "氣象資料載入中…";
 
-        const AUTH = "CWA-58848C06-C8E1-4CB5-B68C-E95B8E2DF582";
-        const base = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-071";
-        // NOTE:
-        // This dataset often uses Chinese elementName (e.g. "天氣現象", "平均溫度", "12小時降雨機率"),
-        // not the short codes (Wx/T/PoP3h). So we fetch and then pick the best match.
-        const url = `${base}?Authorization=${encodeURIComponent(AUTH)}&format=JSON`;
+        const tamsuiLat = 25.1762;
+        const tamsuiLon = 121.4487;
 
-        const res = await fetch(url, { method: "GET" });
-        if (!res.ok) throw new Error("CWA fetch failed");
-        const json = await res.json();
+        try {
+          const url = `https://api.open-meteo.com/v1/forecast?latitude=${tamsuiLat}&longitude=${tamsuiLon}&hourly=temperature_2m,precipitation_probability,weather_code&forecast_days=1&timezone=Asia/Taipei`;
+          
+          const res = await fetch(url, { method: "GET" });
+          if (!res.ok) throw new Error(`Open-Meteo fetch failed: ${res.status} ${res.statusText}`);
+          const json = await res.json();
+          
+          console.log('Open-Meteo Response:', json);
 
-        const locations = json?.records?.locations?.[0]?.location ?? [];
-        const location =
-          locations.find((l) => String(l.locationName || "").includes("淡水")) ??
-          locations.find((l) => String(l.locationName || "") === "淡水區") ??
-          locations[0];
-        const elements = location?.weatherElement || [];
+          const hourly = json?.hourly;
+          if (!hourly) throw new Error('No hourly data found');
 
-        const byName = new Map(elements.map((e) => [e.elementName, e]));
-        const pickElement = (candidates) => {
-          for (const name of candidates) {
-            if (byName.has(name)) return byName.get(name);
+          const now = new Date();
+          const currentHour = now.getHours();
+          
+          const temp = hourly.temperature_2m?.[currentHour];
+          const pop = hourly.precipitation_probability?.[currentHour];
+          const weatherCode = hourly.weather_code?.[currentHour];
+          
+          const weatherCodeMap = {
+            0: '晴朗',
+            1: '晴時多雲',
+            2: '多雲',
+            3: '陰天',
+            45: '霧',
+            48: '霜',
+            51: '毛毛雨',
+            53: '小雨',
+            55: '中雨',
+            56: '凍毛毛雨',
+            57: '凍小雨',
+            61: '陣雨',
+            63: '中陣雨',
+            65: '大雨',
+            66: '凍陣雨',
+            67: '凍大雨',
+            71: '小雪',
+            73: '中雪',
+            75: '大雪',
+            77: '雪粒',
+            80: '短時陣雨',
+            81: '陣雨',
+            82: '豪雨',
+            85: '短時雪',
+            86: '大雪',
+            95: '雷陣雨',
+            96: '雷雨伴冰雹',
+            99: '強雷雨伴冰雹'
+          };
+
+          const wx = weatherCode !== undefined ? (weatherCodeMap[weatherCode] || '未知') : '—';
+          const tempNum = typeof temp === 'number' ? Math.round(temp) : undefined;
+          const popNum = typeof pop === 'number' ? pop : undefined;
+
+          if (wxEl) wxEl.textContent = wx;
+          if (tEl) tEl.textContent = tempNum !== undefined ? String(tempNum) : "—";
+          if (popEl) popEl.textContent = popNum !== undefined ? String(popNum) : "—";
+
+          const startTime = hourly.time?.[currentHour];
+          if (updated) {
+            updated.textContent = startTime
+              ? `目前時段：${String(startTime).replace("T", " ")}（來源：Open-Meteo / 淡水區）`
+              : `已載入（來源：Open-Meteo / 淡水區）`;
           }
-          return undefined;
-        };
 
-        const wxElmt = pickElement(["Wx", "天氣現象"]);
-        const tElmt = pickElement(["T", "溫度", "平均溫度", "最高溫度", "最低溫度"]);
-        const popElmt = pickElement(["PoP3h", "3小時降雨機率", "PoP12h", "12小時降雨機率"]);
-
-        const wxTimes = wxElmt?.time || [];
-        const tTimes = tElmt?.time || [];
-        const popTimes = popElmt?.time || [];
-
-        const now = Date.now();
-        const pickNow = (times) => {
-          if (!Array.isArray(times) || times.length === 0) return undefined;
-          // Some elements use startTime/endTime (interval); some use dataTime (point).
-          const inRange = times.find((t) => {
-            if (t?.startTime && t?.endTime) {
-              const s = Date.parse(t.startTime);
-              const e = Date.parse(t.endTime);
-              return Number.isFinite(s) && Number.isFinite(e) && s <= now && now < e;
-            }
-            if (t?.dataTime) {
-              const d = Date.parse(t.dataTime);
-              return Number.isFinite(d) && Math.abs(d - now) <= 3 * 60 * 60 * 1000;
-            }
-            return false;
-          });
-          return inRange ?? times[0];
-        };
-
-        const wxNow = pickNow(wxTimes);
-        const tNow = pickNow(tTimes);
-        const popNow = pickNow(popTimes);
-
-        const wx = wxNow?.elementValue?.[0]?.value;
-        const temp = tNow?.elementValue?.[0]?.value;
-        const pop = popNow?.elementValue?.[0]?.value;
-
-        const tempNum = Number(temp);
-        const popNum = Number(pop);
-
-        if (wxEl) wxEl.textContent = wx ? String(wx) : "—";
-        if (tEl) tEl.textContent = Number.isFinite(tempNum) ? String(Math.round(tempNum)) : "—";
-        if (popEl) popEl.textContent = Number.isFinite(popNum) ? String(Math.round(popNum)) : "—";
-
-        const startTime = wxNow?.startTime || tNow?.startTime || popNow?.startTime || wxNow?.dataTime || tNow?.dataTime || popNow?.dataTime;
-        if (updated) {
-          updated.textContent = startTime
-            ? `目前時段：${String(startTime).replace("T", " ").replace("+08:00", "")}（來源：${location?.locationName || "—"}）`
-            : `已載入（時段資訊不足｜來源：${location?.locationName || "—"}）`;
-        }
-
-        const alerts = [];
-        if (Number.isFinite(popNum) && popNum > 50) {
-          alerts.push("⚠️ 淡水區降雨機率高，不建議採收，請加強苗床排水！");
-        }
-        if (Number.isFinite(tempNum) && tempNum > 30) {
-          alerts.push("☀️ 氣溫過高，請注意菜苗遮蔭與水分補充。");
-        }
-
-        if (alertEl) {
-          const p = alertEl.querySelector("p");
-          if (alerts.length > 0) {
-            alertEl.classList.remove("hidden");
-            if (p) p.textContent = alerts.join(" ");
-          } else {
-            alertEl.classList.add("hidden");
-            if (p) p.textContent = "—";
+          const alerts = [];
+          if (typeof popNum === 'number' && popNum > 50) {
+            alerts.push("⚠️ 淡水區降雨機率高，不建議採收，請加強苗床排水！");
           }
+          if (typeof tempNum === 'number' && tempNum > 30) {
+            alerts.push("☀️ 氣溫過高，請注意菜苗遮蔭與水分補充。");
+          }
+
+          if (alertEl) {
+            const p = alertEl.querySelector("p");
+            if (alerts.length > 0) {
+              alertEl.classList.remove("hidden");
+              if (p) p.textContent = alerts.join(" ");
+            } else {
+              alertEl.classList.add("hidden");
+              if (p) p.textContent = "—";
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching weather:', error);
+          if (updated) updated.textContent = `氣象載入失敗：${error.message}`;
         }
       }
 
