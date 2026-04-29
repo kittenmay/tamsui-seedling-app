@@ -602,7 +602,6 @@
       }
 
       async function fetchCrops() {
-        // Year
         const yearEl = $("year");
         if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
@@ -612,13 +611,20 @@
           return [];
         }
 
-        const { data, error } = await globalThis.supabaseClient.from("crops").select("*");
-        if (error) {
-          console.warn("Supabase query error.");
+        try {
+          const { data, error } = await globalThis.supabaseClient.from("crops").select("*");
+          if (error) {
+            console.error("Supabase query error:", error);
+            renderMonthlyRecommendations([]);
+            return [];
+          }
+          console.log("Crops data from Supabase:", data);
+          return data || [];
+        } catch (err) {
+          console.error("Error fetching crops:", err);
           renderMonthlyRecommendations([]);
           return [];
         }
-        return data || [];
       }
 
       async function fetchTamsuiWeather() {
