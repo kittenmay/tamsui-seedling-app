@@ -230,6 +230,37 @@
               aria-live="polite"
             ></div>
 
+            <div class="mt-6 rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-slate-900/5 backdrop-blur">
+              <h3 class="text-lg font-semibold text-slate-900">我的種植記錄</h3>
+              
+              <div id="plantingForm" class="mt-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-600">選擇作物</label>
+                    <select id="cropSelect" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                      <option value="">請選擇</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-600">種植日期</label>
+                    <input type="date" id="plantedDate" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-600">備註</label>
+                    <input type="text" id="plantingNotes" placeholder="例如：第3批種植" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                  </div>
+                </div>
+                <button id="addPlantingBtn" class="mt-4 rounded-lg bg-leaf-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-leaf-700 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                  新增種植記錄
+                </button>
+              </div>
+
+              <div id="plantingRecords" class="mt-6 space-y-3"></div>
+              <div id="plantingEmpty" class="mt-6 hidden rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <p class="text-sm font-semibold text-slate-900">尚未有種植記錄，請新增第一筆！</p>
+              </div>
+            </div>
+
             <div class="mt-6 rounded-xl bg-white p-4 ring-1 ring-slate-900/5">
               <p class="text-sm font-semibold text-slate-900">下一步（之後可接）</p>
               <ul class="mt-2 space-y-1 text-sm text-slate-700">
@@ -751,6 +782,139 @@
         }
       }
 
+      async function loadCropOptions() {
+        if (!globalThis.supabaseClient) return;
+        
+        try {
+          const { data, error } = await globalThis.supabaseClient.from("crops").select("id, name");
+          if (error) return;
+          
+          const select = $("cropSelect");
+          if (!select) return;
+          
+          data.forEach(crop => {
+            const option = document.createElement("option");
+            option.value = crop.id;
+            option.textContent = crop.name;
+            select.appendChild(option);
+          });
+        } catch (err) {
+          console.error('Error loading crop options:', err);
+        }
+      }
+
+      async function fetchPlantingRecords() {
+        if (!globalThis.supabaseClient) return [];
+        
+        try {
+          const { data, error } = await globalThis.supabaseClient
+            .from("planting_records")
+            .select("*")
+            .order("planted_date", { ascending: false });
+          
+          if (error) {
+            console.error('Error fetching planting records:', error);
+            return [];
+          }
+          return data || [];
+        } catch (err) {
+          console.error('Error fetching planting records:', err);
+          return [];
+        }
+      }
+
+      function renderPlantingRecords(records) {
+        const host = $("plantingRecords");
+        const empty = $("plantingEmpty");
+        if (!host || !empty) return;
+        
+        host.innerHTML = "";
+        
+        if (records.length === 0) {
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+        
+        records.forEach(record => {
+          const plantedDate = new Date(record.planted_date);
+          const now = new Date();
+          const daysPassed = Math.floor((now - plantedDate) / (1000 * 60 * 60 * 24));
+          
+          const stages = [
+            { name: '育苗期', days: 7, color: 'bg-sky-50 text-sky-900' },
+            { name: '生長期', days: 21, color: 'bg-leaf-50 text-leaf-900' },
+            { name: '成熟期', days: 35, color: 'bg-sun-50 text-amber-900' },
+            { name: '可採收', days: 45, color: 'bg-green-50 text-green-900' }
+          ];
+          
+          let currentStage = stages[stages.length - 1];
+          for (const stage of stages) {
+            if (daysPassed <= stage.days) {
+              currentStage = stage;
+              break;
+            }
+          }
+          
+          const el = document.createElement("article");
+          el.className = "rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5";
+          el.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h4 class="text-base font-semibold text-slate-900">${escapeHtml(record.crop_name || '未知作物')}</h4>
+                <p class="mt-1 text-xs text-slate-500">
+                  種植日期：${plantedDate.toLocaleDateString('zh-TW')}（已種植 ${daysPassed} 天）
+                </p>
+                ${record.notes ? `<p class="mt-1 text-sm text-slate-700">備註：${escapeHtml(record.notes)}</p>` : ''}
+              </div>
+              <span class="rounded-full ${currentStage.color} px-3 py-1 text-xs font-semibold ring-1 ring-slate-900/10">
+                ${currentStage.name}
+              </span>
+            </div>
+          `;
+          host.appendChild(el);
+        });
+      }
+
+      async function addPlantingRecord() {
+        const cropId = $("cropSelect")?.value;
+        const cropName = $("cropSelect")?.options[$("cropSelect")?.selectedIndex]?.text;
+        const plantedDate = $("plantedDate")?.value;
+        const notes = $("plantingNotes")?.value;
+        
+        if (!cropId || !plantedDate) {
+          alert('請選擇作物和種植日期！');
+          return;
+        }
+        
+        if (!globalThis.supabaseClient) {
+          alert('無法連線到資料庫！');
+          return;
+        }
+        
+        try {
+          const { data, error } = await globalThis.supabaseClient
+            .from("planting_records")
+            .insert([{ crop_id: cropId, crop_name: cropName, planted_date: plantedDate, notes }]);
+          
+          if (error) {
+            console.error('Error inserting planting record:', error);
+            alert('新增失敗，請稍後再試！');
+            return;
+          }
+          
+          $("cropSelect").value = "";
+          $("plantedDate").value = "";
+          $("plantingNotes").value = "";
+          
+          const records = await fetchPlantingRecords();
+          renderPlantingRecords(records);
+        } catch (err) {
+          console.error('Error adding planting record:', err);
+          alert('新增失敗，請稍後再試！');
+        }
+      }
+
       window.addEventListener("DOMContentLoaded", () => {
         fetchCrops()
           .then((data) => renderMonthlyRecommendations(data))
@@ -760,6 +924,14 @@
           const updated = $("weatherUpdated");
           if (updated) updated.textContent = "氣象載入失敗（可能是 API 暫時無法連線或瀏覽器阻擋）。";
         });
+        
+        loadCropOptions();
+        fetchPlantingRecords().then(records => renderPlantingRecords(records));
+        
+        const addBtn = $("addPlantingBtn");
+        if (addBtn) {
+          addBtn.addEventListener("click", addPlantingRecord);
+        }
       });
     </script>
   </body>
