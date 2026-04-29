@@ -209,8 +209,8 @@
             <div class="flex items-start justify-between gap-3">
               <div>
                 <h2 class="text-lg font-semibold text-slate-900">本月推薦種植</h2>
-                <p class="mt-1 text-sm text-slate-600">
-                  目前月份：<span class="font-semibold text-slate-900">4 月</span>（示意）
+                <p id="currentMonthDisplay" class="mt-1 text-sm text-slate-600">
+                  目前月份：<span class="font-semibold text-slate-900">—</span>
                 </p>
               </div>
               <span class="rounded-full bg-leaf-600/10 px-3 py-1 text-xs font-semibold text-leaf-800 ring-1 ring-leaf-900/10">
@@ -605,6 +605,13 @@
         const yearEl = $("year");
         if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
+        const currentMonth = new Date().getMonth() + 1;
+        const monthDisplay = $("currentMonthDisplay");
+        if (monthDisplay) {
+          const span = monthDisplay.querySelector("span");
+          if (span) span.textContent = `${currentMonth} 月`;
+        }
+
         if (!globalThis.supabaseClient) {
           console.warn("supabaseClient not initialized.");
           renderMonthlyRecommendations([]);
@@ -612,13 +619,19 @@
         }
 
         try {
-          const { data, error } = await globalThis.supabaseClient.from("crops").select("*");
+          console.log("Current month:", currentMonth);
+          
+          const { data, error } = await globalThis.supabaseClient
+            .from("crops")
+            .select("*")
+            .contains("months", [String(currentMonth)]);
+          
           if (error) {
             console.error("Supabase query error:", error);
             renderMonthlyRecommendations([]);
             return [];
           }
-          console.log("Crops data from Supabase:", data);
+          console.log("推荐菜苗数据（本月适合种植）:", data);
           return data || [];
         } catch (err) {
           console.error("Error fetching crops:", err);
@@ -705,11 +718,21 @@
           }
 
           const alerts = [];
-          if (typeof popNum === 'number' && popNum > 50) {
-            alerts.push("⚠️ 淡水區降雨機率高，不建議採收，請加強苗床排水！");
+          if (typeof popNum === 'number' && popNum > 70) {
+            alerts.push("⚠️ 淡水區降雨機率高（>70%），不建議採收，請加強苗床排水！");
+            alerts.push("🌧️ 建議選擇耐濕品種如空心菜、絲瓜");
+          } else if (typeof popNum === 'number' && popNum > 50) {
+            alerts.push("🌦️ 淡水區有降雨機率，注意排水措施");
           }
-          if (typeof tempNum === 'number' && tempNum > 30) {
-            alerts.push("☀️ 氣溫過高，請注意菜苗遮蔭與水分補充。");
+          if (typeof tempNum === 'number' && tempNum > 32) {
+            alerts.push("☀️ 氣溫過高（>32°C），請注意菜苗遮蔭與水分補充！");
+            alerts.push("🌡️ 推薦種植：空心菜、絲瓜等耐熱品種");
+          } else if (typeof tempNum === 'number' && tempNum > 28) {
+            alerts.push("🌤️ 氣溫較高，適合種植夏季作物");
+          } else if (typeof tempNum === 'number' && tempNum < 15) {
+            alerts.push("❄️ 氣溫較低，建議選擇耐寒品種如高麗菜");
+          } else if (typeof tempNum === 'number' && tempNum >= 15 && tempNum <= 25) {
+            alerts.push("🌿 氣溫適宜，適合多種蔬菜種植");
           }
 
           if (alertEl) {
