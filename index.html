@@ -261,13 +261,62 @@
               </div>
             </div>
 
+            <div class="mt-6 rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-slate-900/5 backdrop-blur">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h3 class="text-lg font-semibold text-slate-900">📷 拍照診斷</h3>
+                  <p class="mt-1 text-sm text-slate-600">拍攝作物照片，AI 幫你初步診斷病蟲害。</p>
+                  <p id="diagnosisStatus" class="mt-2 text-xs text-slate-500">支援格式：JPG、PNG</p>
+                </div>
+                <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">AI</span>
+              </div>
+
+              <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-200 bg-soil-50 p-6">
+                  <div id="imagePreview" class="hidden w-full">
+                    <img id="previewImg" src="" alt="预览" class="mx-auto max-h-48 rounded-lg object-contain" />
+                  </div>
+                  <div id="uploadPlaceholder" class="text-center">
+                    <svg viewBox="0 0 24 24" class="mx-auto h-10 w-10 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                    <p class="mt-2 text-sm text-slate-600">拖曳或點擊上傳照片</p>
+                    <p class="mt-1 text-xs text-slate-400">JPG、PNG，最大 5MB</p>
+                  </div>
+                  <input type="file" id="imageInput" accept="image/*" class="hidden" />
+                  <div class="flex gap-2">
+                    <button id="uploadBtn" class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-leaf-500">
+                      選擇照片
+                    </button>
+                    <button id="diagnoseBtn" class="hidden rounded-lg bg-leaf-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-leaf-700 focus:outline-none focus:ring-2 focus:ring-leaf-500 disabled:opacity-50" disabled>
+                      開始診斷
+                    </button>
+                  </div>
+                  <button id="resetImageBtn" class="hidden text-xs text-slate-500 underline hover:text-leaf-600">重新選擇</button>
+                </div>
+
+                <div id="diagnosisResult" class="rounded-xl bg-soil-50 p-5 ring-1 ring-slate-900/5">
+                  <p class="text-sm font-semibold text-slate-900">診斷結果</p>
+                  <div id="diagnosisLoading" class="mt-4 hidden text-center">
+                    <p class="text-sm text-slate-500">分析中，請稍候…</p>
+                  </div>
+                  <div id="diagnosisContent" class="mt-4">
+                    <p class="text-sm text-slate-500">上傳照片後點擊「開始診斷」</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="mt-6 rounded-xl bg-white p-4 ring-1 ring-slate-900/5">
               <p class="text-sm font-semibold text-slate-900">開發規劃（之後可接）</p>
               <ul class="mt-2 space-y-1 text-sm text-slate-700">
                 <li>✅ 即時天氣（Open-Meteo API）</li>
                 <li>✅ 本月推薦種植（Supabase）</li>
                 <li>✅ 種植記錄與生長追蹤</li>
-                <li>⬜ 拍照診斷病蟲害</li>
+                <li>✅ 種植曆 & 菜苗百科（Supabase）</li>
+                <li>🆕 拍照診斷病蟲害（Plant.id AI）</li>
                 <li>⬜ 市場行情與採收建議</li>
               </ul>
             </div>
@@ -924,6 +973,134 @@
         });
       }
 
+      let selectedImageBase64 = null;
+
+      function initDiagnosisUI() {
+        const uploadBtn = $("uploadBtn");
+        const imageInput = $("imageInput");
+        const diagnoseBtn = $("diagnoseBtn");
+        const resetBtn = $("resetImageBtn");
+        const previewImg = $("previewImg");
+        const imagePreview = $("imagePreview");
+        const uploadPlaceholder = $("uploadPlaceholder");
+        const diagnosisStatus = $("diagnosisStatus");
+
+        if (!uploadBtn || !imageInput) return;
+
+        uploadBtn.addEventListener("click", () => imageInput.click());
+
+        imageInput.addEventListener("change", () => {
+          const file = imageInput.files[0];
+          if (!file) return;
+
+          if (file.size > 5 * 1024 * 1024) {
+            alert("照片不能超過 5MB！");
+            imageInput.value = "";
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = () => {
+            selectedImageBase64 = reader.result;
+            previewImg.src = reader.result;
+            imagePreview.classList.remove("hidden");
+            uploadPlaceholder.classList.add("hidden");
+            uploadBtn.classList.add("hidden");
+            diagnoseBtn.classList.remove("hidden");
+            resetBtn.classList.remove("hidden");
+            diagnoseBtn.disabled = false;
+            diagnosisStatus && (diagnosisStatus.textContent = `已選擇：${file.name}`);
+          };
+          reader.readAsDataURL(file);
+        });
+
+        resetBtn.addEventListener("click", () => {
+          selectedImageBase64 = null;
+          imageInput.value = "";
+          previewImg.src = "";
+          imagePreview.classList.add("hidden");
+          uploadPlaceholder.classList.remove("hidden");
+          uploadBtn.classList.remove("hidden");
+          diagnoseBtn.classList.add("hidden");
+          resetBtn.classList.add("hidden");
+          diagnosisStatus && (diagnosisStatus.textContent = "支援格式：JPG、PNG");
+          $("diagnosisContent").innerHTML = '<p class="text-sm text-slate-500">上傳照片後點擊「開始診斷」</p>';
+        });
+
+        diagnoseBtn.addEventListener("click", async () => {
+          if (!selectedImageBase64) return;
+
+          diagnoseBtn.disabled = true;
+          diagnoseBtn.textContent = "診斷中…";
+          const loading = $("diagnosisLoading");
+          const content = $("diagnosisContent");
+          loading.classList.remove("hidden");
+          content.innerHTML = "";
+
+          try {
+            const res = await fetch("/api/plant-diagnosis", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image: selectedImageBase64 }),
+            });
+
+            loading.classList.add("hidden");
+
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              content.innerHTML = `<p class="text-sm text-red-600">❌ 診斷失敗：${err.error || 'API 錯誤'}</p>`;
+              return;
+            }
+
+            const data = await res.json();
+
+            if (data.isHealthy) {
+              content.innerHTML = `
+                <div class="rounded-lg bg-leaf-50 p-4 ring-1 ring-leaf-200">
+                  <p class="text-sm font-semibold text-leaf-900">✅ 作物看起來很健康！</p>
+                  <p class="mt-1 text-xs text-leaf-700">未檢測到明顯病蟲害跡象。</p>
+                </div>
+              `;
+            } else if (data.diagnoses && data.diagnoses.length > 0) {
+              let html = `<p class="text-sm font-semibold text-amber-900">⚠️ 檢測到以下問題：</p><div class="mt-3 space-y-3">`;
+              data.diagnoses.forEach((d, i) => {
+                const barColor = d.probability > 60 ? 'bg-red-500' : d.probability > 30 ? 'bg-amber-500' : 'bg-yellow-400';
+                html += `
+                  <div class="rounded-lg bg-white p-3 ring-1 ring-slate-200">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-sm font-semibold text-slate-900">${escapeHtml(d.nameZh)}</span>
+                      <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">${d.probability}%</span>
+                    </div>
+                    <div class="mt-2 h-2 w-full rounded-full bg-slate-100">
+                      <div class="h-2 rounded-full ${barColor}" style="width:${d.probability}%"></div>
+                    </div>
+                    ${d.details.description ? `<p class="mt-2 text-xs text-slate-600">${escapeHtml(d.details.description.value || d.details.description)}</p>` : ''}
+                    ${d.details.treatment ? `
+                      <div class="mt-2 rounded bg-leaf-50 p-2">
+                        <p class="text-xs font-semibold text-leaf-800">🛠️ 處理建議：</p>
+                        <p class="mt-1 text-xs text-leaf-700">${escapeHtml(d.details.treatment.value || d.details.treatment)}</p>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              });
+              html += '</div>';
+              content.innerHTML = html;
+            } else {
+              content.innerHTML = `<p class="text-sm text-slate-500">分析完成，但未能確定具體問題。建議諮詢專業農技人員。</p>`;
+            }
+
+            diagnosisStatus && (diagnosisStatus.textContent = "診斷完成");
+          } catch (err) {
+            loading.classList.add("hidden");
+            content.innerHTML = `<p class="text-sm text-red-600">❌ 網路錯誤：${err.message}</p>`;
+          } finally {
+            diagnoseBtn.disabled = false;
+            diagnoseBtn.textContent = "開始診斷";
+          }
+        });
+      }
+
       window.addEventListener("DOMContentLoaded", () => {
         fetchCrops()
           .then((data) => renderMonthlyRecommendations(data))
@@ -943,6 +1120,8 @@
 
         loadCropOptions();
         fetchPlantingRecords().then(records => renderPlantingRecords(records));
+
+        initDiagnosisUI();
 
         const addBtn = $("addPlantingBtn");
         if (addBtn) addBtn.addEventListener("click", addPlantingRecord);

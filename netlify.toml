@@ -1,0 +1,11 @@
+[build]
+  command = ""
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/plant-diagnosis"
+  to = "/.netlify/functions/plant-diagnosis"
+  status = 200
