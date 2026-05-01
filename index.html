@@ -123,12 +123,12 @@
           </div>
         </div>
         <a
-          href="#"
+          href="#plantingForm"
           class="hidden items-center gap-2 rounded-xl bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 shadow-soft ring-1 ring-slate-900/5 backdrop-blur hover:bg-white sm:inline-flex"
-          aria-label="（示意）新增田間記錄"
+          aria-label="新增田間記錄"
         >
           <span class="inline-block h-2 w-2 rounded-full bg-leaf-500"></span>
-          新增田間記錄（示意）
+          新增田間記錄
         </a>
       </div>
 
@@ -137,7 +137,7 @@
           <div>
             <p class="text-sm font-medium text-slate-600">今日小提醒</p>
             <p class="mt-1 text-base text-slate-900">
-              先把「天氣」與「推薦作物」整合起來，之後再接即時 API。
+              查看今日淡水天氣與適合種植的菜苗。
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -162,7 +162,7 @@
           <div>
             <h2 class="text-xl font-semibold tracking-tight text-slate-900">淡水即時氣象</h2>
             <p class="mt-1 text-sm text-slate-600">
-              資料來源：中央氣象署「鄉鎮逐 3 小時天氣預報」（新北市 / 淡水區）
+              資料來源：Open-Meteo 每小時天氣預報（新北市 / 淡水區）
             </p>
             <p id="weatherUpdated" class="mt-2 text-xs text-slate-500">載入中…</p>
           </div>
@@ -262,11 +262,13 @@
             </div>
 
             <div class="mt-6 rounded-xl bg-white p-4 ring-1 ring-slate-900/5">
-              <p class="text-sm font-semibold text-slate-900">下一步（之後可接）</p>
+              <p class="text-sm font-semibold text-slate-900">開發規劃（之後可接）</p>
               <ul class="mt-2 space-y-1 text-sm text-slate-700">
-                <li>串接中央氣象署或 Open-Meteo API 做即時天氣。</li>
-                <li>把推薦作物改成可維護的資料表（JSON/後端）。</li>
-                <li>加入「菜苗庫存」與「病蟲害提醒」模組。</li>
+                <li>✅ 即時天氣（Open-Meteo API）</li>
+                <li>✅ 本月推薦種植（Supabase）</li>
+                <li>✅ 種植記錄與生長追蹤</li>
+                <li>⬜ 拍照診斷病蟲害</li>
+                <li>⬜ 市場行情與採收建議</li>
               </ul>
             </div>
           </div>
@@ -282,105 +284,29 @@
               <div>
                 <h2 class="text-lg font-semibold text-slate-900">淡水種植曆</h2>
                 <p class="mt-1 text-sm text-slate-600">
-                  淡水偏多雨潮濕，建議注重<strong class="font-semibold text-slate-900">通風、排水、病害預防</strong>。（示意）
+                  淡水偏多雨潮濕，建議注重<strong class="font-semibold text-slate-900">通風、排水、病害預防</strong>。
                 </p>
-                <p id="calendarFromDb" class="mt-2 text-xs text-slate-500">
-                  （尚未載入資料）
-                </p>
+                <p id="calendarFromDb" class="mt-2 text-xs text-slate-500">載入中…</p>
               </div>
-              <span class="inline-flex items-center gap-2 rounded-full bg-leaf-50 px-3 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">
+              <span id="calendarMonthBadge" class="inline-flex items-center gap-2 rounded-full bg-leaf-50 px-3 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">
                 <span class="inline-block h-1.5 w-1.5 rounded-full bg-leaf-600"></span>
-                4–6 月
+                全年
               </span>
             </div>
 
-            <!-- Desktop/tablet table -->
             <div class="mt-5 hidden overflow-hidden rounded-xl ring-1 ring-slate-900/5 md:block">
               <table class="w-full border-collapse bg-white">
                 <thead class="bg-soil-50">
                   <tr>
                     <th class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-slate-600">月份</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-slate-600">推薦菜苗</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-slate-600">潮濕重點提醒</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-slate-600">種植提醒</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
-                  <tr class="hover:bg-white/80">
-                    <td class="px-4 py-4 text-sm font-semibold text-slate-900">4 月</td>
-                    <td class="px-4 py-4 text-sm text-slate-700">
-                      <div class="flex flex-wrap gap-2">
-                        <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
-                        <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
-                      </div>
-                    </td>
-                    <td class="px-4 py-4 text-sm text-slate-700">雨後注意排水；葉面保持乾爽、加強通風。</td>
-                  </tr>
-                  <tr class="hover:bg-white/80">
-                    <td class="px-4 py-4 text-sm font-semibold text-slate-900">5 月</td>
-                    <td class="px-4 py-4 text-sm text-slate-700">
-                      <div class="flex flex-wrap gap-2">
-                        <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
-                        <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">絲瓜</span>
-                        <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
-                      </div>
-                    </td>
-                    <td class="px-4 py-4 text-sm text-slate-700">進入梅雨季，提前搭棚／引蔓；留意霜黴病、炭疽病。</td>
-                  </tr>
-                  <tr class="hover:bg-white/80">
-                    <td class="px-4 py-4 text-sm font-semibold text-slate-900">6 月</td>
-                    <td class="px-4 py-4 text-sm text-slate-700">
-                      <div class="flex flex-wrap gap-2">
-                        <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">絲瓜</span>
-                        <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
-                        <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
-                      </div>
-                    </td>
-                    <td class="px-4 py-4 text-sm text-slate-700">高溫高濕，病蟲害加速；建議清晨澆水、避免夜間積水。</td>
-                  </tr>
-                </tbody>
+                <tbody id="calendarTableBodyContent" class="divide-y divide-slate-100"></tbody>
               </table>
             </div>
 
-            <!-- Mobile cards -->
-            <div class="mt-5 space-y-3 md:hidden">
-              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
-                <div class="flex items-center justify-between gap-3">
-                  <h3 class="text-base font-semibold text-slate-900">4 月</h3>
-                  <span class="rounded-full bg-leaf-600/10 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">轉暖</span>
-                </div>
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
-                  <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
-                </div>
-                <p class="mt-3 text-sm text-slate-700">雨後注意排水；葉面保持乾爽、加強通風。</p>
-              </article>
-
-              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
-                <div class="flex items-center justify-between gap-3">
-                  <h3 class="text-base font-semibold text-slate-900">5 月</h3>
-                  <span class="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">梅雨</span>
-                </div>
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
-                  <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">絲瓜</span>
-                  <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
-                </div>
-                <p class="mt-3 text-sm text-slate-700">提前搭棚／引蔓；留意霜黴病、炭疽病。</p>
-              </article>
-
-              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
-                <div class="flex items-center justify-between gap-3">
-                  <h3 class="text-base font-semibold text-slate-900">6 月</h3>
-                  <span class="rounded-full bg-sun-100 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">高溫高濕</span>
-                </div>
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-900 ring-1 ring-sky-900/10">絲瓜</span>
-                  <span class="rounded-full bg-sun-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">小黃瓜</span>
-                  <span class="rounded-full bg-leaf-50 px-2.5 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">空心菜</span>
-                </div>
-                <p class="mt-3 text-sm text-slate-700">清晨澆水、避免夜間積水；病蟲害加速時可加密巡檢。</p>
-              </article>
-            </div>
+            <div id="calendarMobileCards" class="mt-5 space-y-3 md:hidden"></div>
           </div>
         </section>
 
@@ -389,19 +315,19 @@
           <div class="rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-slate-900/5 backdrop-blur">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <h2 class="text-lg font-semibold text-slate-900">菜苗百科預留區</h2>
-                <p class="mt-1 text-sm text-slate-600">先做介面，之後可接資料庫或 JSON。（示意）</p>
+                <h2 class="text-lg font-semibold text-slate-900">菜苗百科</h2>
+                <p class="mt-1 text-sm text-slate-600">完整菜苗栽種資訊</p>
               </div>
               <span class="rounded-full bg-soil-100 px-3 py-1 text-xs font-semibold text-soil-900 ring-1 ring-soil-900/10">
                 Beta
               </span>
             </div>
             <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <p id="supabaseStatus" class="text-xs font-semibold text-slate-600">尚未連線 Supabase</p>
+              <p id="supabaseStatus" class="text-xs font-semibold text-slate-600">連線中…</p>
               <p id="encyclopediaCount" class="text-xs text-slate-500">—</p>
             </div>
 
-            <form class="mt-5" action="#" aria-label="菜苗百科搜尋（示意）">
+            <div class="mt-5">
               <label for="encyclopediaSearch" class="sr-only">搜尋作物</label>
               <div class="flex items-center gap-2 rounded-xl bg-soil-50 p-2 ring-1 ring-slate-900/5 focus-within:ring-2 focus-within:ring-leaf-500/60">
                 <span class="grid h-9 w-9 place-items-center rounded-lg bg-white ring-1 ring-slate-900/5">
@@ -418,112 +344,16 @@
                   class="h-9 w-full bg-transparent px-1 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none"
                 />
                 <button
+                  id="encyclopediaSearchBtn"
                   type="button"
                   class="inline-flex h-9 items-center justify-center rounded-lg bg-leaf-600 px-3 text-sm font-semibold text-white shadow-sm hover:bg-leaf-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500"
                 >
                   搜尋
                 </button>
               </div>
-              <p class="mt-2 text-xs text-slate-500">提示：目前為預留區，搜尋不會真的查詢資料。</p>
-            </form>
-
-            <div id="encyclopediaCards" class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
-              <!-- Card: Cabbage -->
-              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 class="text-base font-semibold text-slate-900">高麗菜</h3>
-                    <p class="mt-1 text-xs font-semibold text-slate-600">十字花科｜葉菜</p>
-                  </div>
-                  <span class="rounded-full bg-leaf-100 px-2 py-0.5 text-xs font-semibold text-leaf-900">好保存</span>
-                </div>
-                <dl class="mt-4 grid grid-cols-2 gap-3">
-                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
-                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-leaf-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 6v6l4 2" />
-                        <circle cx="12" cy="12" r="9" />
-                      </svg>
-                      生長天數
-                    </dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-900">75–95 天</dd>
-                  </div>
-                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
-                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 2s6 7 6 12a6 6 0 0 1-12 0c0-5 6-12 6-12z" />
-                      </svg>
-                      澆水頻率
-                    </dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-900">每 2–3 天</dd>
-                  </div>
-                </dl>
-              </article>
-
-              <!-- Card: Lettuce -->
-              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 class="text-base font-semibold text-slate-900">萵苣</h3>
-                    <p class="mt-1 text-xs font-semibold text-slate-600">菊科｜葉菜</p>
-                  </div>
-                  <span class="rounded-full bg-sun-100 px-2 py-0.5 text-xs font-semibold text-amber-900">清爽脆口</span>
-                </div>
-                <dl class="mt-4 grid grid-cols-2 gap-3">
-                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
-                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-leaf-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 6v6l4 2" />
-                        <circle cx="12" cy="12" r="9" />
-                      </svg>
-                      生長天數
-                    </dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-900">45–60 天</dd>
-                  </div>
-                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
-                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 2s6 7 6 12a6 6 0 0 1-12 0c0-5 6-12 6-12z" />
-                      </svg>
-                      澆水頻率
-                    </dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-900">每天／隔天</dd>
-                  </div>
-                </dl>
-              </article>
-
-              <!-- Card: Tomato -->
-              <article class="rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5 sm:col-span-2 lg:col-span-1">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 class="text-base font-semibold text-slate-900">番茄</h3>
-                    <p class="mt-1 text-xs font-semibold text-slate-600">茄科｜果菜</p>
-                  </div>
-                  <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-900">需立支架</span>
-                </div>
-                <dl class="mt-4 grid grid-cols-2 gap-3">
-                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
-                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-leaf-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 6v6l4 2" />
-                        <circle cx="12" cy="12" r="9" />
-                      </svg>
-                      生長天數
-                    </dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-900">90–120 天</dd>
-                  </div>
-                  <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
-                    <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <svg viewBox="0 0 24 24" class="h-4 w-4 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 2s6 7 6 12a6 6 0 0 1-12 0c0-5 6-12 6-12z" />
-                      </svg>
-                      澆水頻率
-                    </dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-900">每 2–3 天</dd>
-                  </div>
-                </dl>
-              </article>
             </div>
+
+            <div id="encyclopediaCards" class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1" aria-live="polite"></div>
           </div>
         </section>
       </div>
@@ -915,6 +745,185 @@
         }
       }
 
+      async function fetchAllCrops() {
+        if (!globalThis.supabaseClient) {
+          $("supabaseStatus") && ($("supabaseStatus").textContent = "無法連線 Supabase");
+          return [];
+        }
+        try {
+          const { data, error } = await globalThis.supabaseClient.from("crops").select("*").order("name");
+          if (error) {
+            $("supabaseStatus") && ($("supabaseStatus").textContent = "讀取失敗");
+            return [];
+          }
+          $("supabaseStatus") && ($("supabaseStatus").textContent = "已連線 Supabase");
+          $("encyclopediaCount") && ($("encyclopediaCount").textContent = `${data.length} 種作物`);
+          return data || [];
+        } catch (err) {
+          $("supabaseStatus") && ($("supabaseStatus").textContent = "連線錯誤");
+          return [];
+        }
+      }
+
+      function renderEncyclopedia(crops, filter) {
+        const host = $("encyclopediaCards");
+        if (!host) return;
+
+        let filtered = crops;
+        if (filter && filter.trim()) {
+          const kw = filter.trim().toLowerCase();
+          filtered = crops.filter(c =>
+            (c.name || "").toLowerCase().includes(kw) ||
+            (c.category || "").toLowerCase().includes(kw) ||
+            (c.description || "").toLowerCase().includes(kw)
+          );
+        }
+
+        host.innerHTML = "";
+
+        if (filtered.length === 0) {
+          host.innerHTML = `<div class="col-span-full rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+            <p class="text-sm font-semibold text-slate-900">${filter ? '找不到符合的作物' : '尚無作物資料'}</p>
+          </div>`;
+          return;
+        }
+
+        const categoryColors = {
+          '葉菜': 'bg-leaf-100 text-leaf-900',
+          '果菜': 'bg-sun-100 text-amber-900',
+          '根莖': 'bg-soil-200 text-soil-900',
+          '豆類': 'bg-sky-100 text-sky-900',
+        };
+
+        filtered.forEach(crop => {
+          const monthsStr = (crop.months || []).map(m => `${m}月`).join('、') || '全年';
+          const catBadge = crop.category
+            ? `<span class="rounded-full ${categoryColors[crop.category] || 'bg-soil-100 text-soil-900'} px-2 py-0.5 text-xs font-semibold ring-1 ring-slate-900/10">${escapeHtml(crop.category)}</span>`
+            : '';
+
+          const el = document.createElement("article");
+          el.className = "rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5";
+          el.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="text-base font-semibold text-slate-900">${escapeHtml(crop.name)}</h3>
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                  ${catBadge}
+                  <span class="text-xs text-slate-500">${escapeHtml(crop.description || '')}</span>
+                </div>
+              </div>
+            </div>
+            <dl class="mt-4 grid grid-cols-2 gap-3">
+              <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
+                <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-leaf-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 6v6l4 2" />
+                    <circle cx="12" cy="12" r="9" />
+                  </svg>
+                  生長天數
+                </dt>
+                <dd class="mt-1 text-sm font-semibold text-slate-900">${crop.growth_days ? `${crop.growth_days} 天` : '—'}</dd>
+              </div>
+              <div class="rounded-lg bg-white/70 p-3 ring-1 ring-slate-900/5">
+                <dt class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-sky-700" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2s6 7 6 12a6 6 0 0 1-12 0c0-5 6-12 6-12z" />
+                  </svg>
+                  澆水頻率
+                </dt>
+                <dd class="mt-1 text-sm font-semibold text-slate-900">${escapeHtml(crop.water_frequency || '—')}</dd>
+              </div>
+            </dl>
+            <p class="mt-3 text-sm text-slate-700">
+              <span class="font-semibold text-slate-900">小撇步：</span>${escapeHtml(crop.tip || '—')}
+            </p>
+            <p class="mt-2 text-xs text-slate-500">適合月份：${monthsStr}</p>
+          `;
+          host.appendChild(el);
+        });
+      }
+
+      let allCropsCache = [];
+
+      async function fetchPlantingCalendar() {
+        $("calendarFromDb") && ($("calendarFromDb").textContent = "載入中…");
+        if (!globalThis.supabaseClient) {
+          $("calendarFromDb") && ($("calendarFromDb").textContent = "無法連線資料庫");
+          return [];
+        }
+        try {
+          const { data, error } = await globalThis.supabaseClient
+            .from("planting_calendar")
+            .select("*")
+            .order("month");
+          if (error) {
+            $("calendarFromDb") && ($("calendarFromDb").textContent = "讀取失敗");
+            return [];
+          }
+          $("calendarFromDb") && ($("calendarFromDb").textContent = `已載入 ${data.length} 個月`);
+          return data || [];
+        } catch (err) {
+          $("calendarFromDb") && ($("calendarFromDb").textContent = "連線錯誤");
+          return [];
+        }
+      }
+
+      function renderPlantingCalendar(data) {
+        const tableBody = $("calendarTableBodyContent");
+        const mobileCards = $("calendarMobileCards");
+        const badge = $("calendarMonthBadge");
+
+        if (!tableBody || !mobileCards) return;
+
+        tableBody.innerHTML = "";
+        mobileCards.innerHTML = "";
+
+        if (!data || data.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="2" class="px-4 py-8 text-center text-sm text-slate-500">尚無資料</td></tr>`;
+          return;
+        }
+
+        const currentMonth = new Date().getMonth() + 1;
+        if (badge) {
+          badge.querySelector("span") && (badge.querySelector("span").textContent = `${currentMonth} 月焦點`);
+        }
+
+        // Desktop table
+        data.forEach(row => {
+          const isCurrent = row.month === currentMonth;
+          const tr = document.createElement("tr");
+          tr.className = isCurrent ? "bg-leaf-50/50 hover:bg-white/80" : "hover:bg-white/80";
+          tr.innerHTML = `
+            <td class="px-4 py-4 text-sm font-semibold text-slate-900">
+              ${row.month} 月${isCurrent ? ' <span class="ml-1 rounded-full bg-leaf-600 px-1.5 py-0.5 text-[10px] text-white">本月</span>' : ''}
+            </td>
+            <td class="px-4 py-4 text-sm text-slate-700">${escapeHtml(row.description || '—')}</td>
+          `;
+          tableBody.appendChild(tr);
+        });
+
+        // Mobile cards
+        const monthLabels = {
+          1: '寒冬', 2: '早春', 3: '回暖', 4: '轉暖', 5: '梅雨', 6: '高溫高濕',
+          7: '盛夏', 8: '颱風季', 9: '轉涼', 10: '秋季', 11: '入冬', 12: '寒冬'
+        };
+        data.forEach(row => {
+          const isCurrent = row.month === currentMonth;
+          const article = document.createElement("article");
+          article.className = `rounded-xl p-4 ring-1 ${isCurrent ? 'bg-leaf-50 ring-leaf-200' : 'bg-soil-50 ring-slate-900/5'}`;
+          article.innerHTML = `
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="text-base font-semibold text-slate-900">
+                ${row.month} 月${isCurrent ? ' 🔽本月' : ''}
+              </h3>
+              <span class="rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-900/10">${monthLabels[row.month] || ''}</span>
+            </div>
+            <p class="mt-3 text-sm text-slate-700">${escapeHtml(row.description || '—')}</p>
+          `;
+          mobileCards.appendChild(article);
+        });
+      }
+
       window.addEventListener("DOMContentLoaded", () => {
         fetchCrops()
           .then((data) => renderMonthlyRecommendations(data))
@@ -924,13 +933,30 @@
           const updated = $("weatherUpdated");
           if (updated) updated.textContent = "氣象載入失敗（可能是 API 暫時無法連線或瀏覽器阻擋）。";
         });
-        
+
+        fetchAllCrops().then(crops => {
+          allCropsCache = crops;
+          renderEncyclopedia(crops);
+        });
+
+        fetchPlantingCalendar().then(data => renderPlantingCalendar(data));
+
         loadCropOptions();
         fetchPlantingRecords().then(records => renderPlantingRecords(records));
-        
+
         const addBtn = $("addPlantingBtn");
-        if (addBtn) {
-          addBtn.addEventListener("click", addPlantingRecord);
+        if (addBtn) addBtn.addEventListener("click", addPlantingRecord);
+
+        const searchInput = $("encyclopediaSearch");
+        const searchBtn = $("encyclopediaSearchBtn");
+        if (searchBtn && searchInput) {
+          searchBtn.addEventListener("click", () => renderEncyclopedia(allCropsCache, searchInput.value));
+          searchInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              renderEncyclopedia(allCropsCache, searchInput.value);
+            }
+          });
         }
       });
     </script>
