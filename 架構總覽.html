@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>淡水農友助手 — 系統架構總覽</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; background: #f7f3ee; color: #1e293b; line-height: 1.7; padding: 0; }
+  .page { max-width: 1000px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  h1 { font-size: 2rem; margin-bottom: 4px; color: #0e8555; }
+  h2 { font-size: 1.3rem; margin: 32px 0 16px; color: #1e3a8a; border-bottom: 2px solid #bfdbfe; padding-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  h3 { font-size: 1rem; margin: 16px 0 8px; color: #0f172a; }
+
+  .subtitle { color: #64748b; margin-bottom: 28px; font-size: 0.95rem; }
+
+  .card { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(15,23,42,.06); border: 1px solid rgba(15,23,42,.05); }
+
+  .arch-diagram { background: linear-gradient(135deg, #eefbf2, #fef3c7, #eef6ff); border-radius: 16px; padding: 28px 20px; text-align: center; margin: 20px 0; }
+  .arch-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin: 10px 0; }
+  .arch-box { background: #fff; border-radius: 12px; padding: 16px 20px; min-width: 120px; box-shadow: 0 4px 12px rgba(0,0,0,.06); border: 1px solid rgba(0,0,0,.07); }
+  .arch-box strong { display: block; font-size: .85rem; margin-bottom: 4px; }
+  .arch-box span { font-size: .75rem; color: #64748b; }
+  .arch-arrow { font-size: 1.4rem; color: #94a3b8; display: flex; align-items: center; }
+  .arch-highlight { background: #0e8555; color: #fff; border: none; }
+  .arch-highlight span { color: #d8f6e3; }
+
+  .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .feat-item { background: #f8fafc; border-radius: 12px; padding: 18px; border: 1px solid #e2e8f0; }
+  .feat-item .icon { font-size: 1.6rem; }
+  .feat-item h3 { margin: 8px 0 4px; font-size: .95rem; }
+  .feat-item p { font-size: .82rem; color: #475569; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: .72rem; font-weight: 600; }
+  .badge-done { background: #d8f6e3; color: #0e8555; }
+  .badge-plan { background: #fef3c7; color: #92400e; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+  th { background: #f1f5f9; font-weight: 600; color: #334155; }
+
+  .db-card { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+  .db-icon { background: #0e8555; color: #fff; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: .85rem; font-weight: 700; }
+  .db-info { flex: 1; }
+  .db-info h4 { font-size: .9rem; margin-bottom: 2px; }
+  .db-info p { font-size: .78rem; color: #64748b; }
+
+  .flow-step { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .flow-num { background: #1d4ed8; color: #fff; min-width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; }
+
+  .contact { background: #fef3c7; border-radius: 12px; padding: 20px 24px; margin-top: 28px; border: 1px solid #fde68a; }
+  .contact h3 { color: #92400e; }
+
+  footer { text-align: center; color: #94a3b8; font-size: .8rem; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>🌱 淡水農友助手</h1>
+<p class="subtitle">專為淡水菜苗專賣店設計的農民資訊 Web App · 系統架構總覽</p>
+
+<!-- 系统架构图 -->
+<h2>🏗️ 系統架構</h2>
+<div class="arch-diagram">
+  <div class="arch-row">
+    <div class="arch-box"><strong>👨‍🌾 農民</strong><span>瀏覽器 / 手機</span></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box arch-highlight"><strong>🌐 Netlify</strong><span>網站託管</span></div>
+    <div class="arch-arrow">←</div>
+    <div class="arch-box"><strong>🗄️ Supabase</strong><span>資料庫</span></div>
+  </div>
+  <div class="arch-row" style="margin-top:6px;">
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px;">所有功能在瀏覽器運行，資料儲存在雲端</div>
+  </div>
+  <div style="margin-top:14px; display:flex; justify-content:center; gap:32px; flex-wrap:wrap;">
+    <div class="arch-box"><strong>🌤️ Open-Meteo</strong><span>免費天氣 API</span></div>
+    <div class="arch-box"><strong>🔍 Plant.id</strong><span>AI 病蟲害診斷</span></div>
+  </div>
+</div>
+
+<!-- 8大功能 -->
+<h2>✅ 八大功能模組</h2>
+<div class="feat-grid">
+  <div class="feat-item"><div class="icon">🌤️</div><h3>淡水即時氣象 <span class="badge badge-done">完成</span></h3><p>每小時自動更新氣溫、降雨機率、天氣現象</p></div>
+  <div class="feat-item"><div class="icon">📅</div><h3>淡水種植曆 <span class="badge badge-done">完成</span></h3><p>1~12 月完整種植提醒，自動標示本月</p></div>
+  <div class="feat-item"><div class="icon">🥬</div><h3>本月推薦種植 <span class="badge badge-done">完成</span></h3><p>根據當前季節自動篩選適合種植的菜苗</p></div>
+  <div class="feat-item"><div class="icon">📚</div><h3>菜苗百科 + 搜尋 <span class="badge badge-done">完成</span></h3><p>6 種作物完整資訊：生長天數、澆水頻率、小撇步</p></div>
+  <div class="feat-item"><div class="icon">📝</div><h3>我的種植記錄 <span class="badge badge-done">完成</span></h3><p>記錄種植日期，自動計算生長階段：育苗→生長→成熟→可採收</p></div>
+  <div class="feat-item"><div class="icon">📷</div><h3>拍照診斷病蟲害 <span class="badge badge-done">完成</span></h3><p>拍作物照片，AI 檢測病害並提供處理建議</p></div>
+  <div class="feat-item"><div class="icon">📊</div><h3>市場行情 <span class="badge badge-done">完成</span></h3><p>台北批發市場價格：最低/最高/均價 + 漲跌趨勢</p></div>
+  <div class="feat-item"><div class="icon">🧺</div><h3>智慧採收建議 <span class="badge badge-done">完成</span></h3><p>結合天氣 + 生長階段 + 市場行情，給最佳採收時機</p></div>
+</div>
+
+<!-- 合作流程 -->
+<h2>🔄 開發與更新流程</h2>
+<div class="card">
+  <div class="flow-step"><div class="flow-num">1</div><strong>需求討論：</strong>您提出功能需求或調整想法</div>
+  <div class="flow-step"><div class="flow-num">2</div><strong>AI 開發：</strong>自動編寫程式碼 → 自動更新資料庫 → 自動提交到 GitHub</div>
+  <div class="flow-step"><div class="flow-num">3</div><strong>自動部署：</strong>Netlify 自動發佈到線上，1-2 分鐘生效</div>
+  <div class="flow-step"><div class="flow-num">4</div><strong>驗收使用：</strong>打開網站查看效果，無需您手動操作</div>
+</div>
+
+<!-- 资料库结构 -->
+<h2>🗄️ 資料庫結構</h2>
+<div class="card">
+  <div class="db-card"><div class="db-icon">苗</div><div class="db-info"><h4>crops</h4><p>菜苗資料：空心菜、小黃瓜、絲瓜、番茄、高麗菜、萵苣（6 筆）</p></div></div>
+  <div class="db-card"><div class="db-icon">曆</div><div class="db-info"><h4>planting_calendar</h4><p>種植曆：1~12 月每月種植提醒（12 筆）</p></div></div>
+  <div class="db-card"><div class="db-icon">記</div><div class="db-info"><h4>planting_records</h4><p>農民種植記錄：日期、作物、備註、生長階段（使用者新增）</p></div></div>
+  <div class="db-card"><div class="db-icon">價</div><div class="db-info"><h4>market_prices</h4><p>市場行情：台北批發市場蔬菜價格與漲跌趨勢（6 筆）</p></div></div>
+</div>
+
+<!-- 平台与帐号 -->
+<h2>🔗 平台與帳號</h2>
+<div class="card">
+  <table>
+    <tr><th>平台</th><th>用途</th><th>帳號</th><th>費用</th></tr>
+    <tr><td>GitHub</td><td>程式碼版本管理</td><td>kittenmay / lin036@gmail.com</td><td>免費</td></tr>
+    <tr><td>Netlify</td><td>網站託管 + 自動部署</td><td>已登錄</td><td>免費</td></tr>
+    <tr><td>Supabase</td><td>雲端資料庫</td><td>已登錄</td><td>免費（500MB 內）</td></tr>
+    <tr><td>Open-Meteo</td><td>天氣 API</td><td>無需帳號</td><td>免費</td></tr>
+    <tr><td>Plant.id</td><td>AI 病害診斷</td><td>已註冊</td><td>每月 10 次免費</td></tr>
+  </table>
+</div>
+
+<!-- 网站网域 -->
+<h2>🌐 網站網域</h2>
+<div class="card">
+  <p><strong>正式網址：</strong><a href="https://frollicking-meerkat-afb36c.netlify.app" style="color:#0e8555;">https://frollicking-meerkat-afb36c.netlify.app</a></p>
+  <p style="margin-top:8px;font-size:.85rem;color:#64748b;">※ 可設定自訂域名（例如：tamsui-seedling.com.tw）</p>
+</div>
+
+<!-- 后续可调整 -->
+<h2>🔧 可調整項目</h2>
+<div class="feat-grid">
+  <div class="feat-item"><div class="icon">🖼️</div><h3>品牌 Logo 與配色</h3><p>可更換店家的 Logo、品牌色、字型風格</p></div>
+  <div class="feat-item"><div class="icon">🥬</div><h3>菜苗資料擴充</h3><p>可新增更多菜苗品種，不限定 6 種</p></div>
+  <div class="feat-item"><div class="icon">📊</div><h3>市場行情資料來源</h3><p>可串接真實批發市場 API 或手動更新</p></div>
+  <div class="feat-item"><div class="icon">🔐</div><h3>會員登入系統</h3><p>可加入登入功能，保護農民個人資料</p></div>
+  <div class="feat-item"><div class="icon">📱</div><h3>轉為手機 APP</h3><p>可打包成 iOS/Android APP 上架</p></div>
+  <div class="feat-item"><div class="icon">💬</div><h3>農友社群</h3><p>可加入討論區或 LINE 通知整合</p></div>
+</div>
+
+<!-- 工作流程说明 -->
+<h2>📞 討論與反饋方式</h2>
+<div class="contact">
+  <h3>與賣家討論要點</h3>
+  <ul style="padding-left:20px;color:#475569;font-size:.9rem;line-height:2;">
+    <li>是否需要增加更多菜苗品種？</li>
+    <li>品牌名稱、配色是否需要調整？</li>
+    <li>是否想自訂網域名稱？（例如 tamsui-seedling.tw）</li>
+    <li>市場行情是否需要連接真實的批發市場資料？</li>
+    <li>是否需要手機 APP 版本？</li>
+    <li>有沒有其他需要的功能？</li>
+  </ul>
+</div>
+
+<footer>
+  淡水菜苗專賣店 · 淡水農友助手 · 系統架構總覽 · 2026 年 5 月<br>
+  網站：https://frollicking-meerkat-afb36c.netlify.app
+</footer>
+
+</div>
+</body>
+</html>

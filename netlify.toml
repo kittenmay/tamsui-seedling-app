@@ -9,3 +9,8 @@
   from = "/api/plant-diagnosis"
   to = "/.netlify/functions/plant-diagnosis"
   status = 200
+
+[[redirects]]
+  from = "/api/update-market"
+  to = "/.netlify/functions/update-market"
+  status = 200
