@@ -122,14 +122,21 @@
             </h1>
           </div>
         </div>
-        <a
-          href="#plantingForm"
-          class="hidden items-center gap-2 rounded-xl bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 shadow-soft ring-1 ring-slate-900/5 backdrop-blur hover:bg-white sm:inline-flex"
-          aria-label="新增田間記錄"
-        >
-          <span class="inline-block h-2 w-2 rounded-full bg-leaf-500"></span>
-          新增田間記錄
-        </a>
+        <div class="flex flex-col items-end gap-2">
+          <div id="authArea" class="flex items-center gap-2">
+            <span id="userGreeting" class="hidden text-sm font-medium text-slate-700">👤 <span id="userEmail"></span></span>
+            <button id="loginBtn" class="rounded-xl bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 shadow-soft ring-1 ring-slate-900/5 backdrop-blur hover:bg-white">登入</button>
+            <button id="logoutBtn" class="hidden rounded-xl bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 shadow-soft ring-1 ring-slate-900/5 backdrop-blur hover:bg-white">登出</button>
+          </div>
+          <a
+            href="#plantingForm"
+            class="hidden items-center gap-2 rounded-xl bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 shadow-soft ring-1 ring-slate-900/5 backdrop-blur hover:bg-white sm:inline-flex"
+            aria-label="新增田間記錄"
+          >
+            <span class="inline-block h-2 w-2 rounded-full bg-leaf-500"></span>
+            新增田間記錄
+          </a>
+        </div>
       </div>
 
       <div class="mt-6 rounded-2xl bg-white/70 p-5 shadow-soft ring-1 ring-slate-900/5 backdrop-blur sm:p-6">
@@ -448,6 +455,31 @@
         </section>
       </div>
 
+      <div id="loginModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm" aria-hidden="true">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-slate-900" id="loginModalTitle">登入</h3>
+            <button id="closeLoginModal" class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="關閉">✕</button>
+          </div>
+          <div class="mt-4 space-y-4">
+            <div>
+              <label for="loginEmail" class="block text-xs font-semibold text-slate-600">Email</label>
+              <input type="email" id="loginEmail" placeholder="your@email.com" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500">
+            </div>
+            <div>
+              <label for="loginPassword" class="block text-xs font-semibold text-slate-600">密碼</label>
+              <input type="password" id="loginPassword" placeholder="至少 6 位" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500">
+            </div>
+            <p id="loginError" class="hidden text-xs text-red-600"></p>
+            <p id="loginSuccess" class="hidden text-xs text-leaf-700"></p>
+            <button id="submitLogin" class="w-full rounded-lg bg-leaf-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-leaf-700 focus:outline-none focus:ring-2 focus:ring-leaf-500">登入</button>
+            <p class="text-center text-xs text-slate-500">
+              沒有帳號？<button id="switchToRegister" class="font-semibold text-leaf-700 underline hover:text-leaf-800">註冊</button>
+            </p>
+          </div>
+        </div>
+      </div>
+
       <footer class="mt-10 text-center text-xs text-slate-500">
         <p>© <span id="year"></span> 淡水菜苗專賣店｜淡水農友助手（基礎版）</p>
       </footer>
@@ -725,13 +757,16 @@
 
       async function fetchPlantingRecords() {
         if (!globalThis.supabaseClient) return [];
-        
+        const { data: { session } } = await globalThis.supabaseClient.auth.getSession();
+        if (!session?.user) return [];
+
         try {
           const { data, error } = await globalThis.supabaseClient
             .from("planting_records")
             .select("*")
+            .eq("user_id", session.user.id)
             .order("planted_date", { ascending: false });
-          
+
           if (error) {
             console.error('Error fetching planting records:', error);
             return [];
@@ -801,32 +836,38 @@
         const cropName = $("cropSelect")?.options[$("cropSelect")?.selectedIndex]?.text;
         const plantedDate = $("plantedDate")?.value;
         const notes = $("plantingNotes")?.value;
-        
+
         if (!cropId || !plantedDate) {
           alert('請選擇作物和種植日期！');
           return;
         }
-        
+
         if (!globalThis.supabaseClient) {
           alert('無法連線到資料庫！');
           return;
         }
-        
+
+        const { data: { session } } = await globalThis.supabaseClient.auth.getSession();
+        if (!session?.user) {
+          alert('請先登入再新增種植記錄！');
+          return;
+        }
+
         try {
           const { data, error } = await globalThis.supabaseClient
             .from("planting_records")
-            .insert([{ crop_id: cropId, crop_name: cropName, planted_date: plantedDate, notes }]);
-          
+            .insert([{ crop_id: cropId, crop_name: cropName, planted_date: plantedDate, notes, user_id: session.user.id }]);
+
           if (error) {
             console.error('Error inserting planting record:', error);
             alert('新增失敗，請稍後再試！');
             return;
           }
-          
+
           $("cropSelect").value = "";
           $("plantedDate").value = "";
           $("plantingNotes").value = "";
-          
+
           const records = await fetchPlantingRecords();
           renderPlantingRecords(records);
         } catch (err) {
@@ -1140,6 +1181,131 @@
         } catch { return { temp: null, pop: null }; }
       }
 
+      let isRegisterMode = false;
+
+      function initAuth() {
+        const loginBtn = $("loginBtn");
+        const logoutBtn = $("logoutBtn");
+        const userGreeting = $("userGreeting");
+        const userEmailSpan = $("userEmail");
+        const loginModal = $("loginModal");
+        const closeLoginModal = $("closeLoginModal");
+        const submitLogin = $("submitLogin");
+        const loginModalTitle = $("loginModalTitle");
+        const loginEmail = $("loginEmail");
+        const loginPassword = $("loginPassword");
+        const loginError = $("loginError");
+        const loginSuccess = $("loginSuccess");
+        const switchToRegister = $("switchToRegister");
+
+        function updateUI(user) {
+          if (user) {
+            loginBtn.classList.add("hidden");
+            logoutBtn.classList.remove("hidden");
+            userGreeting.classList.remove("hidden");
+            if (userEmailSpan) userEmailSpan.textContent = user.email;
+          } else {
+            loginBtn.classList.remove("hidden");
+            logoutBtn.classList.add("hidden");
+            userGreeting.classList.add("hidden");
+          }
+        }
+
+        if (!globalThis.supabaseClient) return;
+
+        globalThis.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+          updateUI(session?.user ?? null);
+        });
+
+        globalThis.supabaseClient.auth.onAuthStateChange((_event, session) => {
+          updateUI(session?.user ?? null);
+          fetchPlantingRecords().then(records => renderPlantingRecords(records));
+        });
+
+        loginBtn.addEventListener("click", () => {
+          if (!loginModal) return;
+          loginModal.style.display = "flex";
+          loginModal.setAttribute("aria-hidden", "false");
+          loginEmail.value = "";
+          loginPassword.value = "";
+          loginError.classList.add("hidden");
+          loginSuccess.classList.add("hidden");
+          isRegisterMode = false;
+          loginModalTitle.textContent = "登入";
+          submitLogin.textContent = "登入";
+          switchToRegister.textContent = "註冊";
+        });
+
+        closeLoginModal.addEventListener("click", () => {
+          loginModal.style.display = "none";
+          loginModal.setAttribute("aria-hidden", "true");
+        });
+
+        switchToRegister.addEventListener("click", () => {
+          isRegisterMode = !isRegisterMode;
+          if (isRegisterMode) {
+            loginModalTitle.textContent = "註冊";
+            submitLogin.textContent = "註冊";
+            switchToRegister.textContent = "已有帳號？登入";
+          } else {
+            loginModalTitle.textContent = "登入";
+            submitLogin.textContent = "登入";
+            switchToRegister.textContent = "註冊";
+          }
+          loginError.classList.add("hidden");
+          loginSuccess.classList.add("hidden");
+        });
+
+        submitLogin.addEventListener("click", async () => {
+          const email = loginEmail.value.trim();
+          const password = loginPassword.value.trim();
+          loginError.classList.add("hidden");
+          loginSuccess.classList.add("hidden");
+
+          if (!email || !password) {
+            loginError.textContent = "請填寫 Email 和密碼";
+            loginError.classList.remove("hidden");
+            return;
+          }
+
+          submitLogin.disabled = true;
+          submitLogin.textContent = isRegisterMode ? "註冊中…" : "登入中…";
+
+          try {
+            let result;
+            if (isRegisterMode) {
+              result = await globalThis.supabaseClient.auth.signUp({ email, password });
+              if (result?.error) throw result.error;
+              loginSuccess.textContent = "註冊成功！請檢查 Email 確認信箱。";
+              loginSuccess.classList.remove("hidden");
+              setTimeout(() => { loginModal.style.display = "none"; loginModal.setAttribute("aria-hidden", "true"); }, 2000);
+            } else {
+              result = await globalThis.supabaseClient.auth.signInWithPassword({ email, password });
+              if (result?.error) throw result.error;
+              loginModal.style.display = "none";
+              loginModal.setAttribute("aria-hidden", "true");
+            }
+          } catch (err) {
+            const msg = err?.message || err?.error_description || "認證失敗";
+            if (msg.includes("Invalid login")) loginError.textContent = "Email 或密碼錯誤";
+            else if (msg.includes("already registered")) loginError.textContent = "此 Email 已註冊，請改用登入";
+            else loginError.textContent = msg;
+            loginError.classList.remove("hidden");
+          } finally {
+            submitLogin.disabled = false;
+            submitLogin.textContent = isRegisterMode ? "註冊" : "登入";
+          }
+        });
+
+        logoutBtn.addEventListener("click", async () => {
+          await globalThis.supabaseClient.auth.signOut();
+        });
+
+        loginPassword.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") submitLogin.click();
+        });
+      }
+
       function initDiagnosisUI() {
         const uploadBtn = $("uploadBtn");
         const imageInput = $("imageInput");
@@ -1287,6 +1453,7 @@
         fetchPlantingRecords().then(records => renderPlantingRecords(records));
 
         initDiagnosisUI();
+        initAuth();
 
         let marketPricesCache = [];
         let plantingRecordsCache = [];
