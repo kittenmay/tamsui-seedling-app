@@ -357,6 +357,35 @@
               <div id="harvestSuggestions" class="mt-5 space-y-3"></div>
             </div>
 
+            <div class="mt-6 rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-slate-900/5 backdrop-blur">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h3 class="text-lg font-semibold text-slate-900">💬 農友社群</h3>
+                  <p class="mt-1 text-sm text-slate-600">分享種植經驗、交流問題與心得</p>
+                  <p id="communityStatus" class="mt-2 text-xs text-slate-500">載入中…</p>
+                </div>
+                <span class="rounded-full bg-soil-100 px-3 py-1 text-xs font-semibold text-soil-900 ring-1 ring-soil-900/10">交流</span>
+              </div>
+
+              <div id="communityNewPost" class="mt-5 hidden">
+                <textarea id="communityTitle" placeholder="標題（選填）" rows="1" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500"></textarea>
+                <textarea id="communityContent" placeholder="分享你的種植心得或問題…" rows="3" class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500"></textarea>
+                <div class="mt-2 flex items-center gap-2">
+                  <button id="submitPost" class="rounded-lg bg-leaf-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-leaf-700 focus:outline-none focus:ring-2 focus:ring-leaf-500">發佈</button>
+                  <button id="cancelPost" class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50">取消</button>
+                </div>
+              </div>
+
+              <div id="communityLoginHint" class="mt-5 rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <p class="text-sm font-semibold text-slate-900">請先登入，即可參與社群討論</p>
+              </div>
+
+              <div id="communityPosts" class="mt-5 space-y-3"></div>
+              <div id="communityEmpty" class="mt-5 hidden rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5">
+                <p class="text-sm font-semibold text-slate-900">尚無討論，快來發佈第一篇吧！</p>
+              </div>
+            </div>
+
             <div class="mt-6 rounded-xl bg-white p-4 ring-1 ring-slate-900/5">
               <p class="text-sm font-semibold text-slate-900">開發規劃（之後可接）</p>
               <ul class="mt-2 space-y-1 text-sm text-slate-700">
@@ -1183,6 +1212,167 @@
 
       let isRegisterMode = false;
 
+      async function fetchCommunityPosts() {
+        if (!globalThis.supabaseClient) return [];
+        try {
+          const { data, error } = await globalThis.supabaseClient
+            .from("community_posts")
+            .select("*")
+            .is("parent_id", null)
+            .order("created_at", { ascending: false })
+            .limit(30);
+          if (error) return [];
+          if (!data || data.length === 0) return [];
+
+          const postIds = data.map(p => p.id);
+          const { data: replies } = await globalThis.supabaseClient
+            .from("community_posts")
+            .select("*")
+            .in("parent_id", postIds)
+            .order("created_at", { ascending: true });
+
+          const replyMap = new Map();
+          (replies || []).forEach(r => {
+            const arr = replyMap.get(r.parent_id) || [];
+            arr.push(r);
+            replyMap.set(r.parent_id, arr);
+          });
+
+          return data.map(p => ({ ...p, replies: replyMap.get(p.id) || [] }));
+        } catch { return []; }
+      }
+
+      function renderCommunityPosts(posts, isLoggedIn) {
+        const host = $("communityPosts");
+        const empty = $("communityEmpty");
+        const loginHint = $("communityLoginHint");
+        const newPost = $("communityNewPost");
+        const status = $("communityStatus");
+
+        if (!host) return;
+        host.innerHTML = "";
+
+        if (loginHint) loginHint.classList.toggle("hidden", isLoggedIn);
+        if (newPost) newPost.classList.toggle("hidden", !isLoggedIn);
+        if (status) status.textContent = `共 ${posts.length} 篇討論`;
+
+        if (!posts || posts.length === 0) {
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+
+        posts.forEach(post => {
+          const time = new Date(post.created_at);
+          const timeStr = time.toLocaleDateString('zh-TW') + ' ' + time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+          const el = document.createElement("article");
+          el.className = "rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5";
+          el.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h4 class="text-base font-semibold text-slate-900">${escapeHtml(post.title || '無標題')}</h4>
+                <p class="mt-2 text-sm text-slate-700">${escapeHtml(post.content)}</p>
+                <p class="mt-2 text-xs text-slate-400">${escapeHtml(post.user_email || '匿名')} · ${timeStr}</p>
+              </div>
+              ${isLoggedIn ? `<button data-reply="${post.id}" class="replyBtn shrink-0 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-leaf-700 ring-1 ring-leaf-300 hover:bg-leaf-50">回覆</button>` : ''}
+            </div>
+            ${(post.replies || []).length > 0 ? `
+              <div class="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                ${post.replies.map(r => {
+                  const rt = new Date(r.created_at);
+                  const rtStr = rt.toLocaleDateString('zh-TW') + ' ' + rt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+                  return `<div class="rounded-lg bg-white/70 p-2.5 ring-1 ring-slate-100"><p class="text-sm text-slate-700">${escapeHtml(r.content)}</p><p class="mt-1 text-xs text-slate-400">${escapeHtml(r.user_email || '匿名')} · ${rtStr}</p></div>`;
+                }).join('')}
+              </div>
+            ` : ''}
+            <div class="replyForm mt-2 hidden" data-reply-form="${post.id}">
+              <textarea class="replyInput w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-leaf-500" rows="2" placeholder="寫下你的回覆…"></textarea>
+              <div class="mt-2 flex gap-2">
+                <button class="submitReplyBtn rounded-lg bg-leaf-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-leaf-700" data-reply-id="${post.id}">送出</button>
+                <button class="cancelReplyBtn rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50" data-reply-id="${post.id}">取消</button>
+              </div>
+            </div>
+          `;
+          host.appendChild(el);
+        });
+
+        document.querySelectorAll(".replyBtn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.reply;
+            const form = document.querySelector(`[data-reply-form="${id}"]`);
+            if (form) form.classList.toggle("hidden");
+          });
+        });
+
+        document.querySelectorAll(".cancelReplyBtn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.replyId;
+            const form = document.querySelector(`[data-reply-form="${id}"]`);
+            if (form) { form.classList.add("hidden"); form.querySelector(".replyInput").value = ""; }
+          });
+        });
+
+        document.querySelectorAll(".submitReplyBtn").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const id = btn.dataset.replyId;
+            const form = document.querySelector(`[data-reply-form="${id}"]`);
+            const input = form?.querySelector(".replyInput");
+            if (!input || !input.value.trim()) return;
+            await submitReply(id, input.value.trim());
+            input.value = "";
+            form.classList.add("hidden");
+            refreshCommunity();
+          });
+        });
+      }
+
+      async function submitReply(parentId, content) {
+        if (!globalThis.supabaseClient) return;
+        const { data: { session } } = await globalThis.supabaseClient.auth.getSession();
+        if (!session?.user) return;
+        await globalThis.supabaseClient.from("community_posts").insert([{
+          parent_id: parentId,
+          content,
+          user_id: session.user.id,
+          user_email: session.user.email
+        }]);
+      }
+
+      async function submitNewPost() {
+        const titleEl = $("communityTitle");
+        const contentEl = $("communityContent");
+        const title = titleEl?.value?.trim() || "";
+        const content = contentEl?.value?.trim();
+        if (!content) { alert("請輸入內容！"); return; }
+        if (!globalThis.supabaseClient) return;
+
+        const { data: { session } } = await globalThis.supabaseClient.auth.getSession();
+        if (!session?.user) return;
+
+        $("submitPost").disabled = true;
+        $("submitPost").textContent = "發佈中…";
+        try {
+          await globalThis.supabaseClient.from("community_posts").insert([{
+            title: title || content.slice(0, 40),
+            content,
+            user_id: session.user.id,
+            user_email: session.user.email
+          }]);
+          titleEl.value = "";
+          contentEl.value = "";
+          $("communityNewPost").classList.add("hidden");
+          await refreshCommunity();
+        } catch (err) { console.error("Post error:", err); }
+        finally { $("submitPost").disabled = false; $("submitPost").textContent = "發佈"; }
+      }
+
+      async function refreshCommunity() {
+        const { data: { session } } = await globalThis.supabaseClient.auth.getSession();
+        const isLoggedIn = !!session?.user;
+        const posts = await fetchCommunityPosts();
+        renderCommunityPosts(posts, isLoggedIn);
+      }
+
       function initAuth() {
         const loginBtn = $("loginBtn");
         const logoutBtn = $("logoutBtn");
@@ -1220,6 +1410,7 @@
         globalThis.supabaseClient.auth.onAuthStateChange((_event, session) => {
           updateUI(session?.user ?? null);
           fetchPlantingRecords().then(records => renderPlantingRecords(records));
+          refreshCommunity();
         });
 
         loginBtn.addEventListener("click", () => {
@@ -1454,6 +1645,17 @@
 
         initDiagnosisUI();
         initAuth();
+
+        refreshCommunity();
+
+        const submitPost = $("submitPost");
+        const cancelPost = $("cancelPost");
+        if (submitPost) submitPost.addEventListener("click", submitNewPost);
+        if (cancelPost) cancelPost.addEventListener("click", () => {
+          $("communityTitle").value = "";
+          $("communityContent").value = "";
+          $("communityNewPost").classList.add("hidden");
+        });
 
         let marketPricesCache = [];
         let plantingRecordsCache = [];
