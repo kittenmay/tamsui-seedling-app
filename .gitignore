@@ -3,4 +3,8 @@ Thumbs.db
 
 node_modules/
 .vscode/
+android-sdk/
+android/build/
+android/.gradle/
+android/debug.keystore
 
