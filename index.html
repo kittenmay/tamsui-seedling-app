@@ -309,6 +309,44 @@
               </div>
             </div>
 
+            <div class="mt-6 rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-slate-900/5 backdrop-blur">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h3 class="text-lg font-semibold text-slate-900">📊 市場行情</h3>
+                  <p class="mt-1 text-sm text-slate-600">台北批發市場最新蔬菜價格</p>
+                  <p id="marketUpdated" class="mt-2 text-xs text-slate-500">載入中…</p>
+                </div>
+                <span class="rounded-full bg-sun-100 px-3 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-900/10">批發價</span>
+              </div>
+              <div id="marketTableBody" class="mt-5 hidden overflow-hidden rounded-xl ring-1 ring-slate-900/5 md:block">
+                <table class="w-full border-collapse bg-white">
+                  <thead class="bg-soil-50">
+                    <tr>
+                      <th class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-slate-600">作物</th>
+                      <th class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-slate-600">品種</th>
+                      <th class="px-4 py-3 text-right text-xs font-semibold tracking-wide text-slate-600">最低價</th>
+                      <th class="px-4 py-3 text-right text-xs font-semibold tracking-wide text-slate-600">最高價</th>
+                      <th class="px-4 py-3 text-right text-xs font-semibold tracking-wide text-slate-600">均價</th>
+                      <th class="px-4 py-3 text-center text-xs font-semibold tracking-wide text-slate-600">趨勢</th>
+                    </tr>
+                  </thead>
+                  <tbody id="marketTableContent" class="divide-y divide-slate-100"></tbody>
+                </table>
+              </div>
+              <div id="marketMobileCards" class="mt-5 space-y-3 md:hidden"></div>
+            </div>
+
+            <div class="mt-6 rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-slate-900/5 backdrop-blur">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h3 class="text-lg font-semibold text-slate-900">🧺 採收建議</h3>
+                  <p class="mt-1 text-sm text-slate-600">結合天氣、生長階段與市場行情，提供最佳採收建議</p>
+                </div>
+                <span class="rounded-full bg-leaf-100 px-3 py-1 text-xs font-semibold text-leaf-900 ring-1 ring-leaf-900/10">智慧建議</span>
+              </div>
+              <div id="harvestSuggestions" class="mt-5 space-y-3"></div>
+            </div>
+
             <div class="mt-6 rounded-xl bg-white p-4 ring-1 ring-slate-900/5">
               <p class="text-sm font-semibold text-slate-900">開發規劃（之後可接）</p>
               <ul class="mt-2 space-y-1 text-sm text-slate-700">
@@ -316,8 +354,8 @@
                 <li>✅ 本月推薦種植（Supabase）</li>
                 <li>✅ 種植記錄與生長追蹤</li>
                 <li>✅ 種植曆 & 菜苗百科（Supabase）</li>
-                <li>🆕 拍照診斷病蟲害（Plant.id AI）</li>
-                <li>⬜ 市場行情與採收建議</li>
+                <li>✅ 拍照診斷病蟲害（Plant.id AI）</li>
+                <li>🆕 市場行情 & 採收建議</li>
               </ul>
             </div>
           </div>
@@ -975,6 +1013,130 @@
 
       let selectedImageBase64 = null;
 
+      async function fetchMarketPrices() {
+        if (!globalThis.supabaseClient) return [];
+        $("marketUpdated") && ($("marketUpdated").textContent = "載入中…");
+        try {
+          const { data, error } = await globalThis.supabaseClient
+            .from("market_prices")
+            .select("*")
+            .order("price_avg", { ascending: false });
+          if (error) { $("marketUpdated") && ($("marketUpdated").textContent = "讀取失敗"); return []; }
+          $("marketUpdated") && ($("marketUpdated").textContent = `更新日期：${new Date().toLocaleDateString('zh-TW')}`);
+          return data || [];
+        } catch (err) { $("marketUpdated") && ($("marketUpdated").textContent = "連線錯誤"); return []; }
+      }
+
+      function renderMarketPrices(data) {
+        const tableBody = $("marketTableContent");
+        const mobileCards = $("marketMobileCards");
+        if (!tableBody || !mobileCards) return;
+        tableBody.innerHTML = "";
+        mobileCards.innerHTML = "";
+        if (!data || data.length === 0) { tableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">尚無資料</td></tr>'; return; }
+
+        const trendMap = { up: '📈 上漲', down: '📉 下跌', stable: '➡️ 平穩' };
+        const trendColor = { up: 'text-red-600', down: 'text-green-600', stable: 'text-slate-500' };
+
+        data.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-white/80";
+          tr.innerHTML = `
+            <td class="px-4 py-4 text-sm font-semibold text-slate-900">${escapeHtml(row.crop_name || '')}</td>
+            <td class="px-4 py-4 text-sm text-slate-600">${escapeHtml(row.variety || '—')}</td>
+            <td class="px-4 py-4 text-sm text-right text-slate-700">${row.price_low ?? '—'}</td>
+            <td class="px-4 py-4 text-sm text-right text-slate-700">${row.price_high ?? '—'}</td>
+            <td class="px-4 py-4 text-sm text-right font-semibold text-slate-900">${row.price_avg ?? '—'}</td>
+            <td class="px-4 py-4 text-sm text-center ${trendColor[row.trend] || 'text-slate-500'}">${trendMap[row.trend] || '—'}</td>
+          `;
+          tableBody.appendChild(tr);
+        });
+
+        data.forEach(row => {
+          const article = document.createElement("article");
+          article.className = "rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5";
+          article.innerHTML = `
+            <div class="flex items-center justify-between gap-3">
+              <h4 class="text-base font-semibold text-slate-900">${escapeHtml(row.crop_name || '')} ${escapeHtml(row.variety || '')}</h4>
+              <span class="rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold ${trendColor[row.trend] || 'text-slate-500'}">${trendMap[row.trend] || '—'}</span>
+            </div>
+            <dl class="mt-3 grid grid-cols-3 gap-2">
+              <div class="rounded-lg bg-white/70 p-2 text-center ring-1 ring-slate-200"><dt class="text-xs text-slate-500">最低</dt><dd class="mt-0.5 text-sm font-semibold">${row.price_low ?? '—'}</dd></div>
+              <div class="rounded-lg bg-white/70 p-2 text-center ring-1 ring-slate-200"><dt class="text-xs text-slate-500">最高</dt><dd class="mt-0.5 text-sm font-semibold">${row.price_high ?? '—'}</dd></div>
+              <div class="rounded-lg bg-white/70 p-2 text-center ring-1 ring-slate-200"><dt class="text-xs text-slate-500">均價</dt><dd class="mt-0.5 text-sm font-semibold text-slate-900">${row.price_avg ?? '—'}</dd></div>
+            </dl>
+            <p class="mt-2 text-xs text-slate-500">${row.market || ''} / ${row.unit || ''}</p>
+          `;
+          mobileCards.appendChild(article);
+        });
+      }
+
+      async function generateHarvestSuggestions(plantingRecords, marketPrices, tempNum, popNum) {
+        const suggestions = [];
+        if (!plantingRecords || plantingRecords.length === 0) {
+          suggestions.push({ text: '尚無種植記錄，無法提供採收建議。請先至「我的種植記錄」新增。', color: 'text-slate-500', icon: '📝' });
+          return suggestions;
+        }
+
+        const priceMap = new Map();
+        (marketPrices || []).forEach(p => priceMap.set((p.crop_name || '').toLowerCase(), p));
+
+        (plantingRecords || []).forEach(record => {
+          const plantedDate = new Date(record.planted_date);
+          const now = new Date();
+          const daysPassed = Math.floor((now - plantedDate) / (1000 * 60 * 60 * 24));
+          const cropName = record.crop_name || '未知作物';
+          const mp = priceMap.get(cropName.toLowerCase());
+
+          if (daysPassed >= 30) {
+            let suggestion = `🌾 ${cropName} 已種植 ${daysPassed} 天，接近採收期`;
+            if (mp && mp.trend === 'up') suggestion += `，目前價格上漲中（均價 ${mp.price_avg} ${mp.unit || ''}），建議可採收！`;
+            else if (mp && mp.trend === 'down') suggestion += `，價格下跌中，若有銷售管道建議盡早採收。`;
+            else suggestion += `，可準備採收。`;
+
+            if (typeof popNum === 'number' && popNum > 50) suggestion += ' ⚠️ 但降雨機率高，採收前注意天氣。';
+            if (typeof tempNum === 'number' && tempNum > 32) suggestion += ' ☀️ 高溫下建議清晨採收。';
+
+            suggestions.push({ text: suggestion, color: 'text-leaf-700', icon: '✅' });
+          } else if (daysPassed >= 15) {
+            suggestions.push({ text: `🌱 ${cropName} 已種植 ${daysPassed} 天，處於生長期，預計再 ${45 - daysPassed} 天可採收。`, color: 'text-sky-700', icon: '⏳' });
+          }
+        });
+
+        if (suggestions.length === 0) {
+          suggestions.push({ text: '目前尚無接近採收期的作物，請耐心等待生長。', color: 'text-slate-500', icon: '🌱' });
+        }
+        return suggestions;
+      }
+
+      function renderHarvestSuggestions(suggestions) {
+        const host = $("harvestSuggestions");
+        if (!host) return;
+        host.innerHTML = "";
+        suggestions.forEach(s => {
+          const el = document.createElement("div");
+          el.className = "rounded-xl bg-soil-50 p-4 ring-1 ring-slate-900/5";
+          el.innerHTML = `<p class="text-sm ${s.color}"><span class="mr-2">${s.icon}</span>${escapeHtml(s.text)}</p>`;
+          host.appendChild(el);
+        });
+      }
+
+      async function fetchTamsuiWeatherWithData() {
+        try {
+          const url = `https://api.open-meteo.com/v1/forecast?latitude=25.1762&longitude=121.4487&hourly=temperature_2m,precipitation_probability&forecast_days=1&timezone=Asia/Taipei`;
+          const res = await fetch(url, { method: "GET" });
+          if (!res.ok) return { temp: null, pop: null };
+          const json = await res.json();
+          const hourly = json?.hourly;
+          if (!hourly) return { temp: null, pop: null };
+          const currentHour = new Date().getHours();
+          return {
+            temp: hourly.temperature_2m?.[currentHour] ?? null,
+            pop: hourly.precipitation_probability?.[currentHour] ?? null
+          };
+        } catch { return { temp: null, pop: null }; }
+      }
+
       function initDiagnosisUI() {
         const uploadBtn = $("uploadBtn");
         const imageInput = $("imageInput");
@@ -1122,6 +1284,24 @@
         fetchPlantingRecords().then(records => renderPlantingRecords(records));
 
         initDiagnosisUI();
+
+        let marketPricesCache = [];
+        let plantingRecordsCache = [];
+        let weatherData = { temp: null, pop: null };
+
+        fetchMarketPrices().then(data => { marketPricesCache = data; renderMarketPrices(data); });
+
+        Promise.all([
+          fetchPlantingRecords(),
+          fetchMarketPrices(),
+          new Promise(resolve => {
+            fetchTamsuiWeatherWithData().then(d => { weatherData = d; resolve(d); }).catch(() => resolve(null));
+          })
+        ]).then(([records, prices, w]) => {
+          plantingRecordsCache = records;
+          generateHarvestSuggestions(records, prices, weatherData.temp, weatherData.pop)
+            .then(suggestions => renderHarvestSuggestions(suggestions));
+        });
 
         const addBtn = $("addPlantingBtn");
         if (addBtn) addBtn.addEventListener("click", addPlantingRecord);
