@@ -216,6 +216,15 @@
         <div id="weatherAlert" class="mt-5 hidden rounded-xl bg-sun-50 p-4 ring-1 ring-amber-900/10">
           <p class="text-sm font-semibold text-amber-900">—</p>
         </div>
+
+        <div id="weeklyForecast" class="mt-5">
+          <h3 class="text-sm font-semibold text-slate-700 mb-3">📅 未來七天預報</h3>
+          <div id="weeklyCards" class="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-7">
+            <div class="rounded-xl bg-soil-50 p-3 text-center ring-1 ring-slate-900/5 animate-pulse">
+              <p class="text-xs text-slate-500">載入中…</p>
+            </div>
+          </div>
+        </div>
       </section>
 
       <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -1429,6 +1438,74 @@
         } catch { return { temp: null, pop: null }; }
       }
 
+      const weatherCodeMap = {
+        0: '晴朗', 1: '晴時多雲', 2: '多雲', 3: '陰天',
+        45: '霧', 48: '霜',
+        51: '毛毛雨', 53: '小雨', 55: '中雨',
+        56: '凍毛毛雨', 57: '凍小雨',
+        61: '陣雨', 63: '中陣雨', 65: '大雨',
+        66: '凍陣雨', 67: '凍大雨',
+        71: '小雪', 73: '中雪', 75: '大雪', 77: '雪粒',
+        80: '短時陣雨', 81: '陣雨', 82: '豪雨',
+        85: '短時雪', 86: '大雪',
+        95: '雷陣雨', 96: '雷雨伴冰雹', 99: '強雷雨伴冰雹'
+      };
+
+      async function fetchTamsuiWeeklyWeather() {
+        try {
+          const url = `https://api.open-meteo.com/v1/forecast?latitude=25.1762&longitude=121.4487&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&forecast_days=7&timezone=Asia/Taipei`;
+          const res = await fetch(url, { method: "GET" });
+          if (!res.ok) return null;
+          const json = await res.json();
+          const daily = json?.daily;
+          if (!daily) return null;
+          return daily;
+        } catch { return null; }
+      }
+
+      function renderWeeklyWeather(dailyData) {
+        const host = $("weeklyCards");
+        if (!host) return;
+        host.innerHTML = "";
+
+        if (!dailyData || !dailyData.time || dailyData.time.length === 0) {
+          host.innerHTML = '<div class="col-span-full rounded-xl bg-soil-50 p-3 text-center ring-1 ring-slate-900/5"><p class="text-xs text-slate-500">無法載入預報</p></div>';
+          return;
+        }
+
+        const days = dailyData.time;
+        const maxTemps = dailyData.temperature_2m_max || [];
+        const minTemps = dailyData.temperature_2m_min || [];
+        const codes = dailyData.weather_code || [];
+        const pops = dailyData.precipitation_probability_max || [];
+
+        const weekDayNames = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+        for (let i = 0; i < days.length; i++) {
+          const date = new Date(days[i] + 'T00:00:00');
+          const weekday = weekDayNames[date.getDay()];
+          const isToday = i === 0;
+          const wx = weatherCodeMap[codes[i]] || '—';
+          const tMax = typeof maxTemps[i] === 'number' ? Math.round(maxTemps[i]) : '—';
+          const tMin = typeof minTemps[i] === 'number' ? Math.round(minTemps[i]) : '—';
+          const pop = typeof pops[i] === 'number' ? pops[i] : null;
+
+          const card = document.createElement("div");
+          card.className = `rounded-xl p-3 text-center ring-1 ${isToday ? 'bg-leaf-50 ring-leaf-200' : 'bg-soil-50 ring-slate-900/5'}`;
+          card.innerHTML = `
+            <p class="text-xs font-semibold text-slate-800">${weekday}${isToday ? ' 今天' : ''}</p>
+            <p class="mt-1 text-lg">${wx}</p>
+            <p class="mt-1 text-sm font-semibold text-slate-900">
+              <span class="text-sun-600">${tMax}°</span>
+              <span class="text-slate-400 mx-1">/</span>
+              <span class="text-sky-600">${tMin}°</span>
+            </p>
+            ${pop !== null ? `<p class="mt-1 text-[10px] text-slate-500">🌧 ${pop}%</p>` : ''}
+          `;
+          host.appendChild(card);
+        }
+      }
+
       let isRegisterMode = false;
 
       async function fetchCommunityPosts() {
@@ -1867,6 +1944,8 @@
           const updated = $("weatherUpdated");
           if (updated) updated.textContent = "氣象載入失敗（可能是 API 暫時無法連線或瀏覽器阻擋）。";
         });
+
+        fetchTamsuiWeeklyWeather().then(data => renderWeeklyWeather(data)).catch(() => {});
 
         fetchAllCrops().then(crops => {
           allCropsCache = crops;
