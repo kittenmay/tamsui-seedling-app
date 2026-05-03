@@ -640,6 +640,28 @@
           const key = (p.crop_name || '').trim().toLowerCase();
           priceMap.set(key, p);
         });
+
+        function findMarketPrice(cropName) {
+          const cn = (cropName || '').trim().toLowerCase();
+          const direct = priceMap.get(cn);
+          if (direct) return direct;
+
+          for (const [k, v] of priceMap) {
+            if (cn.includes(k) || k.includes(cn)) return v;
+          }
+
+          const broadMap = { '長茄子':'茄子','茄子':'茄子','苦瓜':'苦瓜','辣椒':'辣椒',
+            '甜椒':'甜椒','冬瓜':'冬瓜','蒲':'蒲瓜','絲瓜':'絲瓜','黃瓜':'小黃瓜',
+            '空心菜':'空心菜','莧菜':'莧菜','南瓜':'南瓜','玉米':'玉米',
+            '西瓜':'西瓜','秋葵':'秋葵','番茄':'番茄','高麗菜':'高麗菜','白菜':'白菜' };
+          for (const [lk, lv] of Object.entries(broadMap)) {
+            if (cn.includes(lk.toLowerCase())) {
+              const found = priceMap.get(lv.toLowerCase());
+              if (found) return found;
+            }
+          }
+          return null;
+        }
         const currentMonth = new Date().getMonth() + 1;
         const tempNum = weatherData?.temp;
         const popNum = weatherData?.pop;
@@ -668,7 +690,7 @@
               : `<span class="rounded-full bg-soil-100 px-2.5 py-1 text-xs font-semibold text-soil-900 ring-1 ring-soil-900/10">月份未設定</span>`;
 
           let priceHtml = '';
-          const mp = priceMap.get((crop.name || '').trim().toLowerCase());
+          const mp = findMarketPrice(crop.name);
           if (mp && mp.price_avg) {
             const trendIcon = mp.trend === 'up' ? '📈' : mp.trend === 'down' ? '📉' : '➡️';
             priceHtml = `<span class="ml-2 rounded-full bg-white/80 px-2 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">${trendIcon} 均${mp.price_avg}元</span>`;
