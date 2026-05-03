@@ -117,21 +117,35 @@
 | 欄位 | 型別 | 說明 |
 |------|------|------|
 | `id` | int8 (PK) | 主鍵 |
-| `crop_name` | text | 作物名稱 |
-| `variety` | text | 品種 |
+| `crop_name` | text | 作物名稱（例：高麗菜、番茄、空心菜） |
+| `variety` | text | 品種（例：初秋、牛番茄、小葉） |
 | `market` | text | 市場名稱（台北三重/板橋批發） |
-| `price_low` | numeric | 最低價 |
-| `price_high` | numeric | 最高價 |
-| `price_avg` | numeric | 均價 |
+| `price_low` | numeric | 最低價（多市場加權平均） |
+| `price_high` | numeric | 最高價（多市場加權平均） |
+| `price_avg` | numeric | 均價（多市場加權平均） |
 | `trend` | text | 漲跌趨勢（`up` / `down` / `stable`） |
-| `unit` | text | 單位（例：元/公斤） |
-| `updated_at` | text | 更新日期 |
+| `updated_at` | text | 更新日期（格式：YYYY-MM-DD） |
+
+**筆數**：264 種蔬菜（農業部 FarmTransData N04 蔬菜類，篩選三重/板橋地區全部交易記錄）
 
 **前端查詢**：`fetchMarketPrices()` → `.from("market_prices").select("*").order("price_avg", { ascending: false })`
 
-**自動更新**：`netlify/functions/update-market.js` 從 `FarmTransData` 抓取 → 比對 `CROP_MAP`（空心菜/小黃瓜/絲瓜/番茄/高麗菜/萵苣）→ PATCH 或 POST 至 Supabase。
+**自動更新**：`netlify/functions/update-market.js`（詳見 §2.3）從 `FarmTransData` 抓取 → 篩選 N04 蔬菜類 + 三重/板橋市場 → 依交易量分組合計 → 透過 NAME_MAP（85+ 組）轉為常用名稱 → DELETE 舊資料 → 全部 INSERT 至 Supabase。
 
-**前端過濾**：初始化後市場行情表格只顯示 `recommendedCropNames`（即本月推薦清單）中包含的作物。
+**前端均價模糊比對**（`renderMonthlyRecommendations` 內的 `findMarketPrice(cropName)`）：
+由於 `crops` 表為詳細品種名（例：`白梗空心菜`），而 `market_prices` 為泛稱（例：`空心菜`），前端採用三層比對：
+
+1. **精確比對**：`crop.name.trim().toLowerCase()` 直接查 priceMap
+2. **雙向包含**：遍歷 priceMap，檢查 `cn.includes(k) || k.includes(cn)`
+3. **關鍵字映射（broadMap，31 組）**：若農產品名稱包含指定關鍵字則對應到市場作物名
+   - 例：`白梗空心菜` 含 `空心菜` → 查價 `空心菜`
+   - 例：`水果小黃瓜` 含 `黃瓜` → 查價 `小黃瓜`
+
+**前端渲染**：`renderMarketPrices(data)` →
+- 按 `price_avg` 遞減排序，預設顯示前 10 名（`renderMarketTable` + `renderMarketMobile`）
+- 超過 10 種時顯示下拉選單（`marketFilterRow` / `marketCropFilter`，最多 50 項）
+- 每列自動對照 `recommendedCropNames` 標記「本月推薦」綠色徽章
+- 桌機用表格（`hidden md:block`），手機用卡片（`md:hidden`）
 
 ---
 
@@ -259,20 +273,26 @@
 | 方法 | `GET` |
 | URL | `https://data.moa.gov.tw/Service/OpenData/FromM/FarmTransData.aspx` |
 | 認證 | 無需 |
+| 每日筆數 | 約 2,614 筆（含蔬菜 N04 775 筆、水果 N05、花卉 N06，19 個市場，852 種品項） |
 | 呼叫位置 | `netlify/functions/update-market.js` |
-| 處理流程 | 抓取全台當日行情 → 篩選目標市場（三重區、板橋區、台北一、台北二）→ 比對作物對照表 → 計算均價與趨勢 → PATCH/POST 至 Supabase `market_prices` |
 
-**作物對照表（CROP_MAP）**：
-| 作物名稱 | 品種 | 匹配關鍵字 |
-|----------|------|-----------|
-| 空心菜 | 小葉種 | 蕹菜-小葉、蕹菜 |
-| 小黃瓜 | 一般 | 花胡瓜 |
-| 絲瓜 | 一般 | 絲瓜 |
-| 番茄 | 牛番茄 | 番茄-牛番茄 |
-| 高麗菜 | 初秋 | 甘藍-初秋 |
-| 萵苣 | 結球萵 | 萵苣菜-結球萵 |
+**處理流程**：
+1. 抓取全台當日行情（`FarmTransData`）
+2. 篩選：種類代碼 `N04`（蔬菜類）+ 目標市場（三重區、板橋區、台北一、台北二）+ 平均價 > 0
+3. 分組：依 `作物名稱` 合計 `交易量`
+4. 名稱轉換：`NAME_MAP`（85+ 組）將政府名稱轉為常用中文名
+   - `甘藍-初秋` → `高麗菜`
+   - `蕹菜-小葉` → `空心菜`
+   - `花胡瓜` → `小黃瓜`
+   - 未在對照表中的以 `-` 拆分，前半為名稱、後半為品種
+5. 計算價格：多市場的 `上價`/`中價`/`下價`/`平均價` 加權平均
+6. **趨勢判斷**：`up`（上價 > 均價×1.3）/ `down`（中價 < 均價×0.85）/ `stable`（其他）
+7. 寫入 Supabase：`DELETE` 全部舊資料 → 逐筆 `POST` 264 種蔬菜行情
 
-**趨勢判斷**：`up`（上價 > 均價*1.3）/ `down`（中價 < 均價*0.85）/ `stable`（其他）。
+**NAME_MAP 涵蓋作物**（85+ 組，持續擴充）：
+甘藍類 → 高麗菜、蕹菜類 → 空心菜、花胡瓜 → 小黃瓜、番茄類 → 番茄、萵苣菜類 → 萵苣、絲瓜類 → 絲瓜、胡蘿蔔類 → 胡蘿蔔、蘿蔔類 → 白蘿蔔、包心白 → 包心白菜、青蔥類 → 青蔥、洋蔥 → 洋蔥、苦瓜類 → 苦瓜、茄子類 → 茄子、玉米類 → 玉米、花椰菜類 → 花椰菜、青花苔 → 青花菜、南瓜類 → 南瓜、辣椒類 → 辣椒、甜椒類 → 甜椒、豌豆類 → 豌豆、韭菜類 → 韭菜、菠菜類 → 菠菜、芹菜類 → 芹菜、冬瓜類 → 冬瓜、西瓜類 → 西瓜、小白菜類 → 小白菜
+
+**注意**：寫入 Supabase 必須使用 UTF-8 編碼（`Content-Type: application/json; charset=utf-8` + `ensure_ascii=False`）。PowerShell 的 `ConvertTo-Json` 會導致中文亂碼，建議使用 Python 或 Node.js 處理。
 
 ---
 
@@ -308,7 +328,7 @@
 | 本月推薦 | `monthlyRecommendations` / `monthlyEmpty` | 2 欄作物卡片 |
 | 種植記錄 | `plantingRecords` / `plantingEmpty` / `plantingForm` | 表單 + 記錄列表 |
 | 拍照診斷 | `uploadBtn` / `imageInput` / `diagnoseBtn` / `diagnosisContent` | 雙欄（上傳 + 結果） |
-| 市場行情 | `marketTableContent` / `marketMobileCards` / `refreshMarketBtn` | 桌機表格 + 手機卡片 |
+| 市場行情 | `marketTableContent` / `marketMobileCards` / `refreshMarketBtn` / `marketFilterRow` / `marketCropFilter` | 桌機表格 + 手機卡片，預設前10名 + 下拉選單（最多50項） |
 | 採收建議 | `harvestSuggestions` | 智慧採收建議列表（邏輯：種植≥30天→採收建議 + 市場價 + 氣象，≥15天→生長預估） |
 | 農友社群 | `communityPosts` / `communityNewPost` / `communityEmpty` | 發文區 + 討論串 |
 | 種植曆 | `calendarTableBodyContent` / `calendarMobileCards` | 桌機表格 + 手機卡片，當月高亮 |

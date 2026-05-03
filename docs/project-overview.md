@@ -45,7 +45,7 @@
 | ✅ | **淡水種植曆** | 1~12 月完整種植提醒，當月自動綠色高亮標示 |
 | ✅ | **菜苗百科 + 搜尋** | 143 筆作物，含品種、季節、分類，支援關鍵字搜尋 |
 | ✅ | **拍照診斷病蟲害** | Plant.id AI 辨識，17 種中文病害名稱映射，附處理建議 |
-| 🆕 | **市場行情 & 採收建議** | 台北三重/板橋批發價格，漲跌趨勢，與推薦作物同步顯示 |
+| 🆕 | **市場行情 & 採收建議** | 台北三重/板橋批發全部蔬菜行情（264 種），依均價排序預設顯示前 10 名 + 下拉選單查詢其餘作物，本月推薦卡片自動對應市場均價 |
 | ✅ | **會員登入** | Supabase Auth：Email 註冊/登入，RLS 權限隔離 |
 | ✅ | **農友社群** | 發文討論 + 回覆交流，需登入後參與 |
 | ✅ | **PWA** | `manifest.json`（theme_color `#0e8555`）+ Service Worker 離線快取 |
@@ -74,7 +74,7 @@
 | `crops` | 143 | 菜苗品種（名稱、品種、生長天數、澆水頻率、適合月份、小撇步、季節、分類） | 本月推薦、下拉選單、百科 |
 | `planting_calendar` | 12 | 1~12 月種植提醒 | 種植曆 |
 | `planting_records` | 使用者新增 | 種植記錄（作物、日期、備註、user_id），RLS 隔離 | 我的種植記錄 |
-| `market_prices` | 6 | 台北三重/板橋市場行情（最低/最高/均價、漲跌趨勢） | 市場行情、採收建議 |
+| `market_prices` | 264 | 台北三重/板橋市場行情（最低/最高/均價、漲跌趨勢），涵蓋全部 N04 蔬菜類 | 市場行情、採收建議、本月推薦均價徽章 |
 | `farm_forecast` | 200 | 農糧署農情預測 | 未使用（預留） |
 | `farm_origin_prices` | 277 | 農產品產地價格 | 未使用（預留） |
 | `community_posts` | 使用者新增 | 社群討論（主文/回覆，parent_id 關聯） | 農友社群 |
@@ -89,7 +89,7 @@
 |-----|------|------|------|
 | **Open-Meteo** | `https://api.open-meteo.com/v1/forecast?latitude=25.1762&longitude=121.4487&hourly=temperature_2m,precipitation_probability,weather_code&forecast_days=1&timezone=Asia/Taipei` | 無 | 每小時氣溫、降雨機率、天氣代碼 |
 | **Plant.id** | `POST https://api.plant.id/v3/health_assessment`（透過 `/api/plant-diagnosis` Netlify 代理） | API Key | AI 病害診斷，回傳健康狀態、病害名稱、機率、處理建議 |
-| **農業部批發** | `GET https://data.moa.gov.tw/Service/OpenData/FromM/FarmTransData.aspx` | 無 | 每日批發市場行情（update-market.js 排程更新至 Supabase） |
+| **農業部批發** | `GET https://data.moa.gov.tw/Service/OpenData/FromM/FarmTransData.aspx` | 無 | 每日批發市場行情，update-market.js 抓取全部蔬菜類（N04）交易記錄，依交易量排序，透過 NAME_MAP（85+ 組）將政府名稱轉為常用中文名稱後全部寫入 Supabase |
 | **農糧署農情** | 農糧署開放資料 (UnitId=4P84xEv6hd22) | 無 | 種植面積、產量預測（已匯入 farm_forecast） |
 | **農糧署產地價** | 農糧署開放資料 (UnitId=WVOiWSdDjWxx) | 無 | 歷史產地價格（已匯入 farm_origin_prices） |
 

@@ -64,6 +64,9 @@ HTML（Tailwind 語義化結構）
 |------|------|------|
 | `fetchCommunityPosts` | 從 Supabase 獲取主文 + 回覆 | 由 `refreshCommunity()` 呼叫 |
 | `renderCommunityPosts` | 渲染社群貼文，含動態綁定回覆按鈕事件 | 由 `refreshCommunity()` 呼叫 |
+| `findMarketPrice` | 三層模糊比對作物名稱查找市場均價（精確→雙向包含→關鍵字映射） | 由 `renderMonthlyRecommendations()` 呼叫 |
+| `renderMarketTable` | 渲染桌機版市場行情表格 | 由 `renderMarketPrices()` 呼叫 |
+| `renderMarketMobile` | 渲染手機版市場行情卡片 | 由 `renderMarketPrices()` 呼叫 |
 
 ### 2.2 變數命名
 
@@ -284,8 +287,23 @@ globalThis.supabaseClient = globalThis.supabase.createClient(SUPABASE_URL, SUPAB
 
 ### 6.3 市場行情更新
 
+**後端（update-market.js）**：
 - 手動更新：點擊市場行情區「🔄 更新」按鈕 → POST `/api/update-market`
-- Netlify Function 從 `FarmTransData` 抓取 → 計算 → PATCH/POST 至 Supabase
+- Netlify Function 從 `FarmTransData` 抓取全台當日行情
+- 篩選條件：種類代碼 `N04`（蔬菜類）+ 市場（三重區、板橋區、台北一、台北二）+ 平均價 > 0
+- 分組合計交易量 → 名稱轉換（`NAME_MAP` 85+ 組）→ DELETE 全表 → INSERT 全部（約 264 種蔬菜）
+- 趨勢計算：`up`（上價 > 均價×1.3）/ `down`（中價 < 均價×0.85）/ `stable`
+
+**前端（renderMarketPrices）**：
+- 依 `price_avg` 遞減排序，預設顯示前 10 名（renderMarketTable + renderMarketMobile）
+- 超過 10 種時顯示下拉選單（marketFilterRow / marketCropFilter），最多顯示 50 項
+- 每列自動對照 `recommendedCropNames` 標記「本月推薦」綠色背景 + 徽章
+
+**前端均價對應（findMarketPrice）**：
+- 三層比對：精確 → 雙向包含 → broadMap 關鍵字映射（31 組）
+- broadMap 將品種名映射到泛稱（例：`白梗空心菜` 含 `空心菜` → `空心菜`）
+- 如有 crop.tip 則直接顯示，不查市場價
+- 編碼注意：寫入 Supabase 必須用 `ensure_ascii=False` + UTF-8，PowerShell 的 ConvertTo-Json 會導致中文亂碼
 
 ---
 
@@ -318,7 +336,7 @@ window.addEventListener("DOMContentLoaded", () => {
     recommendedCropNames = new Set(...);
     fetchMarketPrices().then(prices => {
       renderMonthlyRecommendations(data, prices, weatherData);
-      renderMarketPrices(filtered);
+      renderMarketPrices(prices);
     });
   });
 
