@@ -203,9 +203,17 @@
 | URL | `https://api.open-meteo.com/v1/forecast` |
 | 參數 | `latitude=25.1762`、`longitude=121.4487`、`hourly=temperature_2m,precipitation_probability,weather_code`、`forecast_days=1`、`timezone=Asia/Taipei` |
 | 認證 | 無需 |
-| 呼叫位置 | `fetchTamsuiWeather()`（更新 UI）、`fetchTamsuiWeatherWithData()`（僅回傳資料） |
+| 呼叫位置 | `fetchTamsuiWeather()`（更新 UI）、`fetchTamsuiWeatherWithData()`（僅回傳資料）、`fetchTamsuiWeeklyWeather()`（七天預報） |
 | 回傳 | 每小時 `temperature_2m[]`、`precipitation_probability[]`、`weather_code[]`、`time[]` |
 | 取用方式 | 取 `currentHour = new Date().getHours()` 對應索引值 |
+
+**每日預報 API（七天）**：
+| 項目 | 說明 |
+|------|------|
+| URL | `https://api.open-meteo.com/v1/forecast?latitude=25.1762&longitude=121.4487&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&forecast_days=7&timezone=Asia/Taipei` |
+| 呼叫位置 | `fetchTamsuiWeeklyWeather()` → `renderWeeklyWeather(dailyData)` |
+| 回傳 | `daily.time[]`、`daily.temperature_2m_max[]`、`daily.temperature_2m_min[]`、`daily.weather_code[]`、`daily.precipitation_probability_max[]` |
+| 渲染 | 7 格日曆卡片（grid-cols-7），每格顯示星期、天氣表情符號、高/低溫、降雨機率，當天綠色高亮 |
 
 **weather_code 對照表**（23 種）：
 
@@ -324,7 +332,7 @@
 | 區塊 | DOM ID | 說明 |
 |------|--------|------|
 | 頁首 | `header` | Logo「苗」、標題「淡水農友助手」、登入/註冊按鈕 |
-| 氣象儀表板 | `weatherTemp` / `weatherPop` / `weatherWx` / `weatherAlert` | 淡水即時氣象三欄 + 警示 |
+| 氣象儀表板 | `weatherTemp` / `weatherPop` / `weatherWx` / `weatherAlert` / `weeklyForecast` / `weeklyCards` | 淡水即時氣象三欄 + 警示 + 七天預報卡片 |
 | 本月推薦 | `monthlyRecommendations` / `monthlyEmpty` | 2 欄作物卡片 |
 | 種植記錄 | `plantingRecords` / `plantingEmpty` / `plantingForm` | 表單 + 記錄列表 |
 | 拍照診斷 | `uploadBtn` / `imageInput` / `diagnoseBtn` / `diagnosisContent` | 雙欄（上傳 + 結果） |

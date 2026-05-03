@@ -67,6 +67,8 @@ HTML（Tailwind 語義化結構）
 | `findMarketPrice` | 三層模糊比對作物名稱查找市場均價（精確→雙向包含→關鍵字映射） | 由 `renderMonthlyRecommendations()` 呼叫 |
 | `renderMarketTable` | 渲染桌機版市場行情表格 | 由 `renderMarketPrices()` 呼叫 |
 | `renderMarketMobile` | 渲染手機版市場行情卡片 | 由 `renderMarketPrices()` 呼叫 |
+| `fetchTamsuiWeeklyWeather` | 從 Open-Meteo daily API 抓取七天預報 | 由 `DOMContentLoaded` 呼叫 |
+| `renderWeeklyWeather` | 渲染七天預報卡片（當天綠色高亮） | 由 `DOMContentLoaded` 呼叫 |
 
 ### 2.2 變數命名
 
@@ -274,10 +276,11 @@ globalThis.supabaseClient = globalThis.supabase.createClient(SUPABASE_URL, SUPAB
 
 ### 6.1 Open-Meteo
 
-- `fetchTamsuiWeather()`：呼叫天氣 API 並更新 UI（天氣現象、氣溫、降雨、警示）
-- `fetchTamsuiWeatherWithData()`：只回傳 `{ temp, pop }`，不更新 UI（供其他函數使用）
+- `fetchTamsuiWeather()`：呼叫天氣 API 並更新 UI（天氣現象、氣溫、降雨、警示）；請求參數含 `weather_code`
+- `fetchTamsuiWeatherWithData()`：只回傳 `{ temp, pop }`，不更新 UI（供其他函數使用）；不含 `weather_code`
+- `fetchTamsuiWeeklyWeather()`：呼叫 daily API（`forecast_days=7`），回傳 `daily` 物件（含 `time`、`temperature_2m_max`、`temperature_2m_min`、`weather_code`、`precipitation_probability_max`）
+- `renderWeeklyWeather(dailyData)`：渲染 7 個日曆卡片（`grid-cols-7`），顯示星期、天氣現象、最高/最低溫、降雨機率，當天用 `bg-leaf-50` 綠色高亮
 - 座標固定：淡水 (25.1762, 121.4487)
-- 取 `currentHour` 索引對應當前小時資料
 
 ### 6.2 Plant.id（透過 Netlify 代理）
 
