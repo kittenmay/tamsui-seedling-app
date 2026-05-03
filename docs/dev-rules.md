@@ -250,7 +250,7 @@ globalThis.supabaseClient = globalThis.supabase.createClient(SUPABASE_URL, SUPAB
 
 - **RLS 隔離**：`planting_records` 與 `community_posts` 查詢必須帶 `.eq("user_id", session.user.id)`
 - **認證檢查**：需登入的操作前先 `await supabaseClient.auth.getSession()`，檢查 `session?.user`
-- **Service Key**（僅用於 Netlify Function）：具有完整讀寫權限，**不可**出現在前端程式碼中
+- **Service Key**（僅用於 Cloudflare Pages Function）：具有完整讀寫權限，**不可**出現在前端程式碼中
 
 ### 5.3 新增功能時的資料庫步驟
 
@@ -282,20 +282,22 @@ globalThis.supabaseClient = globalThis.supabase.createClient(SUPABASE_URL, SUPAB
 - `renderWeeklyWeather(dailyData)`：渲染 7 個日曆卡片（`grid-cols-7`），顯示星期、天氣現象、最高/最低溫、降雨機率，當天用 `bg-leaf-50` 綠色高亮
 - 座標固定：淡水 (25.1762, 121.4487)
 
-### 6.2 Plant.id（透過 Netlify 代理）
+### 6.2 Plant.id（透過 Cloudflare Pages Function 代理）
 
 - 前端上傳照片（FileReader → base64）→ POST `/api/plant-diagnosis`
+- Cloudflare Pages Function（`functions/api/plant-diagnosis.js`）接收請求，隱藏 API Key
 - 照片限制：最大 5MB，格式 JPG/PNG
-- Netlify Function 剝離 `data:image/...;base64,` 前綴後呼叫 Plant.id
+- Function 剝離 `data:image/...;base64,` 前綴後呼叫 Plant.id
 
 ### 6.3 市場行情更新
 
-**後端（update-market.js）**：
+**後端（functions/api/update-market.js — Cloudflare Pages Function）**：
 - 手動更新：點擊市場行情區「🔄 更新」按鈕 → POST `/api/update-market`
-- Netlify Function 從 `FarmTransData` 抓取全台當日行情
+- Cloudflare Pages Function 從 `FarmTransData` 抓取全台當日行情
 - 篩選條件：種類代碼 `N04`（蔬菜類）+ 市場（三重區、板橋區、台北一、台北二）+ 平均價 > 0
 - 分組合計交易量 → 名稱轉換（`NAME_MAP` 85+ 組）→ DELETE 全表 → INSERT 全部（約 264 種蔬菜）
 - 趨勢計算：`up`（上價 > 均價×1.3）/ `down`（中價 < 均價×0.85）/ `stable`
+- Cloudflare Pages Functions 路由：`/functions/api/` 自動對應 `/api/`，無需手動設定
 
 **前端（renderMarketPrices）**：
 - 依 `price_avg` 遞減排序，預設顯示前 10 名（renderMarketTable + renderMarketMobile）
@@ -412,7 +414,7 @@ window.addEventListener("DOMContentLoaded", () => {
     - build-tools `34.0.0`（含 aapt2.exe、zipalign.exe、apksigner.bat、d8.bat）
     - platforms `android-34`（含 android.jar）
   - 簽署用 keystore：自動生成於 `android\debug.keystore`（alias=debug, 密碼=android）
-- **Netlify Functions**：備用部署方案，主要處理 API 代理
+- **Netlify Functions**：備用部署方案（`netlify/functions/`），保留但非主要使用
 
 ---
 
@@ -438,8 +440,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
 | 項目 | 規範 |
 |------|------|
-| API Key | Plant.id Key 僅存在 `netlify/functions/plant-diagnosis.js`，前端不透出 |
-| Supabase Key | Anon Key 在前端公開是正常設計；Service Key 僅存 `update-market.js`，不出現在前端 |
+| API Key | Plant.id Key 僅存在 `functions/api/plant-diagnosis.js`（CF Pages Function），前端不透出 |
+| Supabase Key | Anon Key 在前端公開是正常設計；Service Key 僅存 `functions/api/update-market.js`，不出現在前端 |
 | RLS | `planting_records` 與 `community_posts` 必須啟用 RLS，依 `user_id` 隔離 |
 | HTML 輸出 | 所有動態內容使用 `escapeHtml()` 防止 XSS |
 | 密碼 | 透過 Supabase Auth 處理，前端不直接操作密碼雜湊 |

@@ -16,13 +16,12 @@
 
 | 層級 | 技術 | 說明 |
 |------|------|------|
-| 前端 | HTML + Tailwind CSS (CDN) + Vanilla JS | 單一 `index.html`，約 1,850 行，無建構步驟 |
+| 前端 | HTML + Tailwind CSS (CDN) + Vanilla JS | 單一 `index.html`，約 1,950 行，無建構步驟 |
 | 後端即服務 | Supabase | 雲端 PostgreSQL + Auth 會員認證 + RLS 權限 |
 | 天氣 API | Open-Meteo | 免費無需 Key，淡水座標 25.1762, 121.4487 |
-| AI 診斷 | Plant.id v3 health_assessment | 每月 10 次免費，透過 Netlify 代理 |
+| AI 診斷 | Plant.id v3 health_assessment | 每月 10 次免費，透過 Cloudflare Pages Function 代理 |
 | 市場行情 | 農業部開放資料 FarmTransData + 農糧署農情預測 | 政府開放 API，免費 |
-| 託管 | Cloudflare Pages | 自動部署，全球 CDN |
-| 備用部署 | Netlify Functions | Plant.id API 代理 + 市場行情自動更新 |
+| 託管 | Cloudflare Pages | 靜態站 + Functions 自動部署，全球 CDN |
 | PWA | manifest.json + Service Worker | 離線快取、手機桌面安裝 |
 | Android | WebView 包裝 APK | `android/` 目錄，`build-apk.ps1` 建構（需 JDK 17 + Android SDK 34） |
 | 版本控制 | Git + GitHub | 帳號 kittenmay / lin036@gmail.com |
@@ -94,12 +93,14 @@
 | **農糧署農情** | 農糧署開放資料 (UnitId=4P84xEv6hd22) | 無 | 種植面積、產量預測（已匯入 farm_forecast） |
 | **農糧署產地價** | 農糧署開放資料 (UnitId=WVOiWSdDjWxx) | 無 | 歷史產地價格（已匯入 farm_origin_prices） |
 
-### Netlify Functions 代理路由
+### Cloudflare Pages Functions（API 代理）
 
 | 路由 | Function 檔案 | 用途 |
 |------|-------------|------|
-| `/api/plant-diagnosis` | `netlify/functions/plant-diagnosis.js` | Plant.id API 安全代理（隱藏 API Key） |
-| `/api/update-market` | `netlify/functions/update-market.js` | 觸發市場行情從政府 API 更新至 Supabase |
+| `/api/plant-diagnosis` | `functions/api/plant-diagnosis.js` | Plant.id API 安全代理（隱藏 API Key） |
+| `/api/update-market` | `functions/api/update-market.js` | 觸發市場行情從政府 API 更新至 Supabase |
+
+> 路由由 Cloudflare Pages 自動依據 `/functions/` 目錄結構對應，無需額外設定。
 
 ---
 
@@ -154,9 +155,13 @@ tamsui-seedling-app/
 │           ├── AndroidManifest.xml  ← 權限 INTERNET, label="農友助手", usesCleartextTraffic
 │           ├── res/values/colors.xml
 │           └── java/com/tamsui/seedling/MainActivity.java  ← WebView loadUrl + JS/DOM enabled
-├── netlify/functions/
-│   ├── plant-diagnosis.js      ← Plant.id API 安全代理
-│   └── update-market.js        ← 市場行情自動更新
+├── functions/                  ← Cloudflare Pages Functions（API 代理）
+│   └── api/
+│       ├── plant-diagnosis.js   ← Plant.id API 安全代理
+│       └── update-market.js     ← 市場行情自動更新
+├── netlify/                    ← Netlify（備援，可移除）
+│   ├── netlify.toml
+│   └── functions/
 └── docs/                       ← 專案文檔
     ├── project-overview.md     ← 本文檔
     ├── api-and-schema.md       ← API 與資料庫詳細說明

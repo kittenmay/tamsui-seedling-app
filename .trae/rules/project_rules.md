@@ -9,10 +9,11 @@
 
 2. **觸發條件**：只要修改了以下任一檔案，就必須檢查並更新 docs：
    - `index.html`（前端邏輯、DOM 結構、函數、變數）
-   - `netlify/functions/*.js`（API 代理邏輯）
+   - `functions/api/*.js`（Cloudflare Pages Functions API 代理）
    - `supabaseClient.js`（連線設定）
-   - `sw.js`、`manifest.json`、`netlify.toml`、`build-apk.ps1`
+   - `sw.js`、`manifest.json`、`build-apk.ps1`
    - Supabase 資料表結構（欄位增刪、RLS 政策）
+   - `netlify/functions/` 保留備援，修改時亦須更新 docs
 
 3. **更新原則**：
    - 不要等使用者提醒，主動自動更新
@@ -28,11 +29,11 @@
 ## 資料更新
 
 7. Supabase `market_prices` 表更新需用 Python（UTF-8），不能用 PowerShell（會亂碼）
-8. `update-market.js` 的 Netlify Function 部署後不會自動執行，需手動觸發或直接寫入 Supabase
+8. `functions/api/update-market.js` 的 Cloudflare Pages Function 部署後不會自動執行，需手動觸發或直接寫入 Supabase
 
 ## 專案特性
 
 9. 純靜態站，無 `package.json` / `node_modules`
 10. 所有功能在單一 `index.html`（~1,900+ 行）
 11. Supabase anon key 公開在前端是正常設計
-12. Plant.id API Key 和 Supabase Service Key 只能存在 Netlify Functions
+12. Plant.id API Key 和 Supabase Service Key 只能存在 Cloudflare Pages Functions（`functions/api/`）和 Netlify Functions

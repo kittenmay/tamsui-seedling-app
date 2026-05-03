@@ -348,26 +348,21 @@
 
 ---
 
-## 四、Netlify 路由設定（netlify.toml）
+## 四、Cloudflare Pages Functions 路由
 
-```toml
-[build]
-  command = ""
-  publish = "."
+Cloudflare Pages 自動依據 `/functions/` 目錄結構對應 HTTP 路由，無需手動設定：
 
-[functions]
-  directory = "netlify/functions"
-
-[[redirects]]
-  from = "/api/plant-diagnosis"
-  to = "/.netlify/functions/plant-diagnosis"
-  status = 200
-
-[[redirects]]
-  from = "/api/update-market"
-  to = "/.netlify/functions/update-market"
-  status = 200
 ```
+functions/api/plant-diagnosis.js  →  /api/plant-diagnosis
+functions/api/update-market.js    →  /api/update-market
+```
+
+| 路由 | Function 檔案 | 用途 |
+|------|-------------|------|
+| `/api/plant-diagnosis` | `functions/api/plant-diagnosis.js` | Plant.id API 安全代理（隱藏 API Key），`onRequest(context)` 格式 |
+| `/api/update-market` | `functions/api/update-market.js` | 市場行情自動更新，`onRequest()` 格式 |
+
+> `netlify/functions/` 目錄保留作為備援，`netlify.toml` 亦保留。
 
 ---
 
