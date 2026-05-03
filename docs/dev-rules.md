@@ -288,6 +288,10 @@ globalThis.supabaseClient = globalThis.supabase.createClient(SUPABASE_URL, SUPAB
 - Cloudflare Pages Function（`functions/api/plant-diagnosis.js`）接收請求，隱藏 API Key
 - 照片限制：最大 5MB，格式 JPG/PNG
 - Function 剝離 `data:image/...;base64,` 前綴後呼叫 Plant.id
+- **繁體中文化**：`DISEASE_MAP`（17 組）英文→繁體病名，`DISEASE_ADVICE`（16 種）提供每種病害的繁體中文「症狀說明」與「處理建議」
+- 回傳格式：`{ isHealthy, diagnoses: [{ name, nameZh, probability, details: { description, treatment } }] }`
+- `description` 和 `treatment` 優先取繁體中文內建版本，若病害不在對照表中才回退英文
+- Netlify `netlify/functions/plant-diagnosis.js` 為備援，兩者邏輯一致
 
 ### 6.3 市場行情更新
 

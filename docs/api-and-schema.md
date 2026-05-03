@@ -239,24 +239,37 @@
 | 方法 | `POST` |
 | 端點 | `https://api.plant.id/v3/health_assessment` |
 | 認證 | Header `Api-Key: jf2mt4tav6C05s3ODF0qpRb3Rezqi3VyfZ4z9ZAS73NlZyOcOV` |
-| 代理路由 | `/api/plant-diagnosis`（由 Netlify `netlify/functions/plant-diagnosis.js` 處理） |
+| 代理路由 | `/api/plant-diagnosis`（Cloudflare Pages Function `functions/api/plant-diagnosis.js`；備援 Netlify `netlify/functions/plant-diagnosis.js`） |
 | 前端呼叫 | `initDiagnosisUI()` 中 `diagnoseBtn` 點擊 → `fetch("/api/plant-diagnosis", { method: "POST", body: JSON.stringify({ image }) })` |
 | 請求格式 | `{ images: [base64_image], similar_images: true }` |
 | 回傳格式 | `{ isHealthy: boolean, diagnoses: [{ name, nameZh, probability, details: { description, treatment } }], result: { isPlant, isHealthy } }` |
 
-**中文病害名稱映射**（17 種）：
+**中文病害名稱映射**（17 種，含完整說明與處理建議）：
 
-| 英文 | 中文 | 英文 | 中文 |
-|------|------|------|------|
-| Powdery Mildew | 白粉病 | Downy Mildew | 霜霉病 |
-| Rust | 锈病 | Leaf Spot | 叶斑病 |
-| Blight | 枯萎病 | Root Rot | 根腐病 |
-| Anthracnose | 炭疽病 | Bacterial Wilt | 细菌性萎凋病 |
-| Mosaic Virus | 花叶病毒 | Aphids | 蚜虫 |
-| Spider Mites | 红蜘蛛 | Whitefly | 白粉虱 |
-| Healthy | 健康 | Nutrient Deficiency | 养分缺乏 |
-| Water Deficiency | 水分不足 | Overwatering | 浇水过多 |
-| Sunburn | 日烧 |
+| 英文 | 繁體中文 | 說明摘要 |
+|------|---------|---------|
+| Powdery Mildew | 白粉病 | 白色粉末狀黴層，通風不良易發 |
+| Downy Mildew | 霜霉病 | 黃斑+灰紫黴層，低溫高濕 |
+| Rust | 銹病 | 橘紅粉末斑點，高溫多濕 |
+| Leaf Spot | 葉斑病 | 褐黑圓斑，濕度過高擴散 |
+| Blight | 枯萎病 | 枝葉突然枯褐，高溫多雨 |
+| Root Rot | 根腐病 | 根部黑腐，澆水過多 |
+| Anthracnose | 炭疽病 | 黑凹陷斑+橘孢子，高溫高濕 |
+| Bacterial Wilt | 細菌性萎凋病 | 葉綠卻萎凋，維管束褐變 |
+| Mosaic Virus | 花葉病毒 | 嵌紋斑+葉緣扭曲，蚜蟲傳播 |
+| Aphids | 蚜蟲 | 嫩葉嫩芽吸食，蜜露煤煙病 |
+| Spider Mites | 紅蜘蛛 | 葉背黃白斑點，高溫乾燥 |
+| Whitefly | 白粉蝨 | 葉背群聚，蜜露+病毒傳播 |
+| Nutrient Deficiency | 養分缺乏 | 生長遲緩葉片黃化 |
+| Water Deficiency | 水分不足 | 葉片下垂乾枯 |
+| Overwatering | 澆水過多 | 葉黃下垂根部缺氧 |
+| Sunburn | 日燒 | 葉緣黃褐燒焦，強光直射 |
+| Healthy | 健康 | — |
+
+**繁體中文化邏輯**（CF Function `translateDisease()` + `DISEASE_ADVICE`）：
+1. Plant.id 回傳英文病害名稱 → `DISEASE_MAP` 比對輸出繁體病名
+2. `DISEASE_ADVICE` 提供每種病害的繁體中文「症狀說明（description）」與「處理建議（treatment，1-4 步驟）」
+3. 若病害不在對照表中，回退使用 Plant.id 原始英文內容
 
 **前端限制**：照片最大 5MB，格式 JPG/PNG。
 
@@ -270,7 +283,9 @@
   - Plant.id 回傳的 `description` 與 `treatment` 處理建議（如有）
 - API 回傳格式不符時：`分析完成，但未能確定具體問題。建議諮詢專業農技人員。`
 
-**Netlify Function 流程**：接收前端 `{ image: dataURL }` → 剝離 `data:image/...;base64,` 前綴 → 呼叫 Plant.id → 回傳 3 筆診斷結果 + 中文名稱。
+**Netlify Function 流程**：接收前端 `{ image: dataURL }` → 剝離 `data:image/...;base64,` 前綴 → 呼叫 Plant.id → 回傳 3 筆診斷結果（含繁體中文名稱 + 說明 + 處理建議）。
+
+> Netlify Function 為 CF Pages Function 的備援，兩者邏輯一致。Plant.id API 回傳的原始 `description` / `treatment` 為英文，前後端皆已改為優先使用內建繁體中文版本。
 
 ---
 
