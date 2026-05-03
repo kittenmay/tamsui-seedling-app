@@ -329,7 +329,7 @@
               <div class="flex items-start justify-between gap-3">
                 <div>
                   <h3 class="text-lg font-semibold text-slate-900">📊 市場行情</h3>
-                  <p class="mt-1 text-sm text-slate-600">台北三重/板橋批發市場 蔬菜交易量前10名</p>
+                  <p class="mt-1 text-sm text-slate-600">台北三重/板橋批發市場 本日蔬菜行情</p>
                   <p id="marketUpdated" class="mt-2 text-xs text-slate-500">載入中…</p>
                 </div>
                 <div class="flex flex-col items-end gap-2">
@@ -651,9 +651,12 @@
           }
 
           const broadMap = { '長茄子':'茄子','茄子':'茄子','苦瓜':'苦瓜','辣椒':'辣椒',
-            '甜椒':'甜椒','冬瓜':'冬瓜','蒲':'蒲瓜','絲瓜':'絲瓜','黃瓜':'小黃瓜',
+            '甜椒':'甜椒','冬瓜':'冬瓜','蒲':'扁蒲','絲瓜':'絲瓜','黃瓜':'小黃瓜',
             '空心菜':'空心菜','莧菜':'莧菜','南瓜':'南瓜','玉米':'玉米',
-            '西瓜':'西瓜','秋葵':'秋葵','番茄':'番茄','高麗菜':'高麗菜','白菜':'白菜' };
+            '西瓜':'西瓜','秋葵':'秋葵','番茄':'番茄','高麗菜':'高麗菜','白菜':'白菜',
+            '蘿蔔':'白蘿蔔','青蔥':'青蔥','洋蔥':'洋蔥','胡蘿蔔':'胡蘿蔔','萵苣':'萵苣',
+            '芹菜':'芹菜','菠菜':'菠菜','花椰菜':'花椰菜','韭菜':'韭菜',
+            '甘藍':'高麗菜','包心':'包心白菜','櫛瓜':'南瓜','香瓜':'香瓜','哈密瓜':'香瓜' };
           for (const [lk, lv] of Object.entries(broadMap)) {
             if (cn.includes(lk.toLowerCase())) {
               const found = priceMap.get(lv.toLowerCase());
@@ -1218,7 +1221,7 @@
             .select("*")
             .order("price_avg", { ascending: false });
           if (error) { $("marketUpdated") && ($("marketUpdated").textContent = "讀取失敗"); return []; }
-          $("marketUpdated") && ($("marketUpdated").textContent = `更新日期：${new Date().toLocaleDateString('zh-TW')} ｜前10大交易量蔬菜`);
+          $("marketUpdated") && ($("marketUpdated").textContent = `更新日期：${new Date().toLocaleDateString('zh-TW')} ｜共 ${data.length} 種蔬菜`);
           return data || [];
         } catch (err) { $("marketUpdated") && ($("marketUpdated").textContent = "連線錯誤"); return []; }
       }
@@ -1240,16 +1243,20 @@
 
         const sorted = [...data].sort((a, b) => (b.price_avg || 0) - (a.price_avg || 0));
         const top10 = sorted.slice(0, 10);
+        const dropdownItems = sorted.slice(0, 50);
         const hasMore = sorted.length > 10;
 
         if (filterRow && filterSelect) {
           if (hasMore) {
             filterRow.classList.remove("hidden");
-            filterSelect.innerHTML = '<option value="">— 前10大熱門 —</option>';
-            sorted.forEach((p, i) => {
+            filterSelect.innerHTML = '<option value="">— 前10大交易量 —</option>';
+            dropdownItems.forEach((p, i) => {
               const label = `${i + 1}. ${p.crop_name || ''} ${p.variety || ''}`;
               filterSelect.innerHTML += `<option value="${escapeHtml(p.crop_name || '')}">${escapeHtml(label)}</option>`;
             });
+            if (sorted.length > 50) {
+              filterSelect.innerHTML += `<option disabled>— 尚有 ${sorted.length - 50} 種未列出 —</option>`;
+            }
             filterSelect.onchange = function () {
               const selected = this.value;
               if (!selected) {

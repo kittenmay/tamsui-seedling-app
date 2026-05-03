@@ -130,8 +130,7 @@ exports.handler = async () => {
     }
 
     const sorted = [...groups.entries()]
-      .sort((a, b) => b[1].totalVolume - a[1].totalVolume)
-      .slice(0, 10);
+      .sort((a, b) => b[1].totalVolume - a[1].totalVolume);
 
     const today = new Date().toISOString().split('T')[0];
     const rows = [];
