@@ -329,7 +329,7 @@
               <div class="flex items-start justify-between gap-3">
                 <div>
                   <h3 class="text-lg font-semibold text-slate-900">📊 市場行情</h3>
-                  <p class="mt-1 text-sm text-slate-600">台北三重/板橋批發市場最新蔬菜價格</p>
+                  <p class="mt-1 text-sm text-slate-600">台北三重/板橋批發市場 蔬菜交易量前10名</p>
                   <p id="marketUpdated" class="mt-2 text-xs text-slate-500">載入中…</p>
                 </div>
                 <div class="flex flex-col items-end gap-2">
@@ -353,6 +353,7 @@
                       <th class="px-4 py-3 text-right text-xs font-semibold tracking-wide text-slate-600">最高價</th>
                       <th class="px-4 py-3 text-right text-xs font-semibold tracking-wide text-slate-600">均價</th>
                       <th class="px-4 py-3 text-center text-xs font-semibold tracking-wide text-slate-600">趨勢</th>
+                      <th class="px-4 py-3 text-right text-xs font-semibold tracking-wide text-slate-600">交易量</th>
                     </tr>
                   </thead>
                   <tbody id="marketTableContent" class="divide-y divide-slate-100"></tbody>
@@ -1195,7 +1196,7 @@
             .select("*")
             .order("price_avg", { ascending: false });
           if (error) { $("marketUpdated") && ($("marketUpdated").textContent = "讀取失敗"); return []; }
-          $("marketUpdated") && ($("marketUpdated").textContent = `更新日期：${new Date().toLocaleDateString('zh-TW')}`);
+          $("marketUpdated") && ($("marketUpdated").textContent = `更新日期：${new Date().toLocaleDateString('zh-TW')} ｜前10大交易量蔬菜`);
           return data || [];
         } catch (err) { $("marketUpdated") && ($("marketUpdated").textContent = "連線錯誤"); return []; }
       }
@@ -1211,7 +1212,7 @@
 
         if (!data || data.length === 0) {
           if (filterRow) filterRow.classList.add("hidden");
-          tableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">尚無資料</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-sm text-slate-500">尚無資料</td></tr>';
           return;
         }
 
@@ -1264,6 +1265,7 @@
             <td class="px-4 py-4 text-sm text-right text-slate-700">${row.price_high ?? '—'}</td>
             <td class="px-4 py-4 text-sm text-right font-semibold text-slate-900">${row.price_avg ?? '—'}</td>
             <td class="px-4 py-4 text-sm text-center ${trendColor[row.trend] || 'text-slate-500'}">${trendMap[row.trend] || '—'}</td>
+            <td class="px-4 py-4 text-sm text-right text-slate-700">${row.volume ? (row.volume >= 1000 ? Math.round(row.volume / 100) / 10 + '公噸' : row.volume + '公斤') : '—'}</td>
           `;
           tableBody.appendChild(tr);
         });
@@ -1282,10 +1284,11 @@
               <h4 class="text-base font-semibold text-slate-900">${escapeHtml(row.crop_name || '')} ${escapeHtml(row.variety || '')}${isReco ? ' <span class="reco-badge ml-1 rounded-full bg-leaf-600 px-1.5 py-0.5 text-[10px] text-white">推薦</span>' : ''}</h4>
               <span class="rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold ${trendColor[row.trend] || 'text-slate-500'}">${trendMap[row.trend] || '—'}</span>
             </div>
-            <dl class="mt-3 grid grid-cols-3 gap-2">
+            <dl class="mt-3 grid grid-cols-4 gap-2">
               <div class="rounded-lg bg-white/70 p-2 text-center ring-1 ring-slate-200"><dt class="text-xs text-slate-500">最低</dt><dd class="mt-0.5 text-sm font-semibold">${row.price_low ?? '—'}</dd></div>
               <div class="rounded-lg bg-white/70 p-2 text-center ring-1 ring-slate-200"><dt class="text-xs text-slate-500">最高</dt><dd class="mt-0.5 text-sm font-semibold">${row.price_high ?? '—'}</dd></div>
               <div class="rounded-lg bg-white/70 p-2 text-center ring-1 ring-slate-200"><dt class="text-xs text-slate-500">均價</dt><dd class="mt-0.5 text-sm font-semibold text-slate-900">${row.price_avg ?? '—'}</dd></div>
+              <div class="rounded-lg bg-white/70 p-2 text-center ring-1 ring-slate-200"><dt class="text-xs text-slate-500">交易量</dt><dd class="mt-0.5 text-sm font-semibold text-slate-700">${row.volume ? (row.volume >= 1000 ? Math.round(row.volume / 100) / 10 + '噸' : row.volume + 'kg') : '—'}</dd></div>
             </dl>
             <p class="mt-2 text-xs text-slate-500">${row.market || ''} / ${row.unit || ''}</p>
           `;
